@@ -1,3 +1,5 @@
+use std::path::Path;
+
 use clap::{Parser, Subcommand};
 
 use crate::{headers::write_header, io::{read_file, write_file}};
@@ -28,7 +30,8 @@ pub fn run_command() {
         Cli { command: Some(Command::Compress { name_in, name_out }) } => {
             println!("{} => {}", name_in, name_out);
             let file = read_file(&name_in);
-            let headers = write_header(&file);
+            let name = Path::new(&name_in).file_name().unwrap().to_str().unwrap();
+            let headers = write_header(&file, name);
             println!("{:?}", headers);
             write_file(file, &name_out);
         },
