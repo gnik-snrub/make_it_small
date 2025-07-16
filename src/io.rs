@@ -22,3 +22,11 @@ pub fn write_file(file: Vec<u8>, path: &str) {
         }
     }
 }
+
+struct BitWriter {
+    buffer: u8,
+    len: u8,
+    output: Vec<u8>,
+    padding_bits: u8,
+}
+
