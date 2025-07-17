@@ -73,3 +73,34 @@ struct BitReader {
     bits_read: usize,
 }
 
+impl BitReader {
+    fn new(padding_bits: usize, input: &[u8]) -> BitReader {
+        BitReader {
+            input: input.to_vec(),
+            byte_pos: 0,
+            bit_pos: 0,
+            total_bits: (input.len() * 8).saturating_sub(padding_bits),
+            bits_read: 0
+        }
+    }
+
+    fn read_bit(&mut self) -> Option<u8> {
+        if self.bits_read >= self.total_bits {
+            return None
+        }
+
+        let current_byte = self.input[self.byte_pos];
+        let bit = (current_byte >> (7 - self.bit_pos)) & 1;
+
+        self.bit_pos += 1;
+        if self.bit_pos == 8 {
+            self.bit_pos = 0;
+            self.byte_pos += 1;
+        }
+
+        self.bits_read += 1;
+
+        Some(bit)
+    }
+}
+
