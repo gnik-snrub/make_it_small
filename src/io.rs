@@ -65,3 +65,11 @@ impl BitWriter {
     }
 }
 
+struct BitReader {
+    input: Vec<u8>,
+    byte_pos: usize,
+    bit_pos: u8,
+    total_bits: usize,
+    bits_read: usize,
+}
+
