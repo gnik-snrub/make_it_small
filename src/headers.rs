@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::constants::{MAGIC_BYTES, VERSION};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Headers {
     magic_bytes: [u8; 4],
     version: u8,
@@ -92,3 +92,33 @@ impl Headers {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn headers_round_trip() {
+        let original = Headers {
+            magic_bytes: [0xDE, 0xAD, 0xBE, 0xEF],
+            version: 1,
+            flags: 0b1010_1010,
+            original_size: 12345,
+            compressed_size: 6789,
+            original_file_name: "testfile.txt".to_string(),
+            salt_and_iv: [987654321, 123456789],
+            padding_bits: 3,
+        };
+
+        let bytes = original.clone().to_bytes();
+        let reconstructed = Headers::from_bytes(&bytes).0;
+
+        assert_eq!(original.magic_bytes, reconstructed.magic_bytes);
+        assert_eq!(original.version, reconstructed.version);
+        assert_eq!(original.flags, reconstructed.flags);
+        assert_eq!(original.original_size, reconstructed.original_size);
+        assert_eq!(original.compressed_size, reconstructed.compressed_size);
+        assert_eq!(original.original_file_name, reconstructed.original_file_name);
+        assert_eq!(original.salt_and_iv, reconstructed.salt_and_iv);
+        assert_eq!(original.padding_bits, reconstructed.padding_bits);
+    }
+}
