@@ -45,4 +45,50 @@ impl Headers {
 
         bytes
     }
+
+    pub fn from_bytes(bytes: &Vec<u8>) -> (Headers, usize) {
+        let mut cursor = 0;
+
+        let magic_bytes = <[u8; 4]>::try_from(&bytes[cursor..cursor+4]).unwrap();
+        cursor += 4;
+
+        let version = bytes[cursor];
+        cursor += 1;
+
+        let flags = bytes[cursor];
+        cursor += 1;
+
+        let original_size = u64::from_le_bytes(bytes[cursor..cursor+8].try_into().unwrap());
+        cursor += 8;
+
+        let file_name_len = u16::from_le_bytes(bytes[cursor..cursor+2].try_into().unwrap()) as usize;
+        cursor += 2;
+
+        let name_bytes = &bytes[cursor..cursor+file_name_len];
+        let original_file_name = String::from_utf8(name_bytes.to_vec()).unwrap();
+        cursor += file_name_len;
+
+        let compressed_size = u64::from_le_bytes(bytes[cursor..cursor+8].try_into().unwrap());
+        cursor += 8;
+
+        let salt = u64::from_le_bytes(bytes[cursor..cursor+8].try_into().unwrap());
+        cursor += 8;
+        let iv = u64::from_le_bytes(bytes[cursor..cursor+8].try_into().unwrap());
+        cursor += 8;
+
+        let padding_bits = bytes[cursor];
+        cursor += 1;
+
+        (Headers {
+           magic_bytes,
+           version,
+           flags,
+           original_size,
+           original_file_name,
+           compressed_size,
+           salt_and_iv: [salt, iv],
+           padding_bits,
+        }, cursor)
+    }
 }
+
