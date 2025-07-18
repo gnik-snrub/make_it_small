@@ -2,7 +2,7 @@ use std::path::Path;
 
 use clap::{Parser, Subcommand};
 
-use crate::{headers::write_header, io::{read_file, write_file}};
+use crate::{headers::{write_header, Headers}, io::{read_file, write_file}};
 
 #[derive(Parser, Debug)]
 #[command(name = "Make It Small")]
@@ -28,15 +28,18 @@ pub fn run_command() {
     let tokens = Cli::parse();
     match tokens {
         Cli { command: Some(Command::Compress { name_in, name_out }) } => {
-            println!("{} => {}", name_in, name_out);
             let file = read_file(&name_in);
             let name = Path::new(&name_in).file_name().unwrap().to_str().unwrap();
-            let headers = write_header(&file, name);
-            println!("{:?}", headers);
-            write_file(file, &name_out);
+            let headers = write_header(&file, name, 0);
+            let mut small_file = headers.to_bytes();
+            small_file.extend_from_slice(&file);
+            write_file(small_file, &name_out);
         },
         Cli { command: Some(Command::Decompress { name_in, name_out }) } => {
-            println!("{} => {}", name_in, name_out);
+            let file = read_file(&name_in);
+            let (headers, header_length) = Headers::from_bytes(&file);
+            println!("Headers: {:?}", headers);
+            write_file(file[header_length..].to_vec(), &name_out);
         },
         Cli { command: None } => {
 
