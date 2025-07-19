@@ -23,19 +23,19 @@ pub fn write_file(file: Vec<u8>, path: &str) {
     }
 }
 
-struct BitWriter {
-    buffer: u8,
-    len: u8,
-    output: Vec<u8>,
-    padding_bits: usize,
+pub struct BitWriter {
+    pub buffer: u8,
+    pub len: u8,
+    pub output: Vec<u8>,
+    pub padding_bits: usize,
 }
 
 impl BitWriter {
-    fn new() -> BitWriter {
+    pub fn new() -> BitWriter {
         BitWriter { buffer: 0, len: 0, output: vec![], padding_bits: 0 }
     }
 
-    fn write_bits(&mut self, value: u32, bit_count: u8) {
+    pub fn write_bits(&mut self, value: u32, bit_count: u8) {
         if bit_count == 0 {
             return;
         }
@@ -53,7 +53,7 @@ impl BitWriter {
         }
     }
 
-    fn flush(&mut self) {
+    pub fn flush(&mut self) {
         for _ in 0..(8 - self.len) {
             self.buffer <<= 1;
             self.buffer |= 0 as u8;
@@ -65,16 +65,16 @@ impl BitWriter {
     }
 }
 
-struct BitReader {
-    input: Vec<u8>,
-    byte_pos: usize,
-    bit_pos: u8,
-    total_bits: usize,
-    bits_read: usize,
+pub struct BitReader {
+    pub input: Vec<u8>,
+    pub byte_pos: usize,
+    pub bit_pos: u8,
+    pub total_bits: usize,
+    pub bits_read: usize,
 }
 
 impl BitReader {
-    fn new(padding_bits: usize, input: &[u8]) -> BitReader {
+    pub fn new(padding_bits: usize, input: &[u8]) -> BitReader {
         BitReader {
             input: input.to_vec(),
             byte_pos: 0,
@@ -84,7 +84,7 @@ impl BitReader {
         }
     }
 
-    fn read_bit(&mut self) -> Option<u8> {
+    pub fn read_bit(&mut self) -> Option<u8> {
         if self.bits_read >= self.total_bits {
             return None
         }
@@ -104,27 +104,3 @@ impl BitReader {
     }
 }
 
-#[test]
-fn test_bitwriter_bitreader_roundtrip() {
-    // 1. Write a sequence of bits
-    let mut writer = BitWriter::new();
-
-    writer.write_bits(0b101, 3);
-    writer.write_bits(0b11, 2);
-    writer.flush();
-
-    assert_eq!(writer.output, vec![0b10111000]);
-
-    // 2. Read them back
-    let mut reader = BitReader::new(writer.padding_bits, &writer.output);
-
-    let mut bits = vec![];
-    for _ in 0..5 {
-        bits.push(reader.read_bit().unwrap());
-    }
-
-    // 3. Verify read bits match original sequence
-    assert_eq!(bits, vec![1, 0, 1, 1, 1]);
-    assert_eq!(reader.bits_read, 5);
-    assert_eq!(reader.total_bits, 8 - writer.padding_bits);
-}
