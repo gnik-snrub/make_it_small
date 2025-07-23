@@ -97,7 +97,7 @@ fn tree_leaf_weights_sum_to_root() {
 
 // Code table tests
 // Helper function
-fn table_for(buf: &[u8]) -> [(u64, u8); 256] {
+fn table_for(buf: &[u8]) -> [(u32, u8); 256] {
     let freq = compute_frequencies(buf);
     let root = build_huffman_tree(&freq).unwrap();
     generate_code_table(&root)
@@ -127,7 +127,7 @@ fn codes_are_prefix_free() {
     let buf = b"test string";
     let table = table_for(buf);
 
-    let codes: Vec<(u64, u8)> = table
+    let codes: Vec<(u32, u8)> = table
         .iter()
         .filter(|&&(_, len)| len > 0)
         .cloned()
@@ -138,7 +138,7 @@ fn codes_are_prefix_free() {
     for (i, &(bits_a, len_a)) in codes.iter().enumerate() {
         for &(bits_b, len_b) in &codes[i + 1..] {
             let min_len = len_a.min(len_b);
-            let mask = if min_len == 64 { u64::MAX } else { u64::MAX << (64 - min_len) };
+            let mask = if min_len == 32 { u32::MAX } else { u32::MAX << (32 - min_len) };
             assert!((bits_a & mask) != (bits_b & mask), "prefix collision detected between {:b} (len {}) and {:b} (len {})", bits_a, len_a, bits_b, len_b);
         }
     }
@@ -151,16 +151,16 @@ fn encoded_bit_count_matches_formula() {
     let root = build_huffman_tree(&freq).unwrap();
     let table = generate_code_table(&root);
 
-    let expected_bits: u64 = freq
+    let expected_bits: u32 = freq
         .iter()
         .enumerate()
         .map(|(sym, &count)| {
             let (_, len) = table[sym];
-            count * len as u64
+            count as u32 * len as u32
         })
         .sum();
 
-    let max_possible = buf.len() as u64 * 64;
+    let max_possible = buf.len() as u32 * 64;
 
     assert!(expected_bits > 0 && expected_bits <= max_possible)
 }

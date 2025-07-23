@@ -1,21 +1,21 @@
 use super::tree::Node;
 
-pub fn generate_code_table(root: &Node) -> [(u64, u8); 256] {
-    let mut table = [(0u64, 0u8); 256];
+pub fn generate_code_table(root: &Node) -> [(u32, u8); 256] {
+    let mut table = [(0u32, 0u8); 256];
 
-    walk(&mut table, root, 0u64, 0u8);
+    walk(&mut table, root, 0u32, 0u8);
 
     table
 }
 
-fn walk(table: &mut [(u64, u8); 256], node: &Node, curr_bits: u64, curr_len: u8) {
+fn walk(table: &mut [(u32, u8); 256], node: &Node, curr_bits: u32, curr_len: u8) {
     let left = &node.left;
     let right = &node.right;
 
     if is_leaf(node) {
         let sym = node.symbol;
         let effective_len = if curr_len == 0 { 1 } else { curr_len };
-        let packed = curr_bits << (64 - effective_len);
+        let packed = curr_bits << (32 - effective_len);
         table[sym.unwrap() as usize] = (packed, effective_len);
         return;
     } else {
