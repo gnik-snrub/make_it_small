@@ -11,11 +11,13 @@ pub fn encode(src: &Vec<u8>) -> Encoded {
             return Encoded {
                 output: Vec::new(),
                 padding_bits: 0,
-                code_table: [(0, 0); 256]
+                code_table: [(0, 0); 256],
+                lengths: [0; 256],
             };
         }
     };
     let codes = generate_code_table(&root);
+    let lengths: [u8; 256] = codes.map(|c| c.1);
 
     let mut writer = BitWriter::new();
 
@@ -32,11 +34,13 @@ pub fn encode(src: &Vec<u8>) -> Encoded {
         output: writer.output,
         padding_bits: writer.padding_bits as u8,
         code_table: codes,
+        lengths
     }
 }
 
 pub struct Encoded {
     pub output: Vec<u8>,
     pub padding_bits: u8,
-    pub code_table: [(u32, u8); 256]
+    pub code_table: [(u32, u8); 256],
+    pub lengths: [u8; 256],
 }
