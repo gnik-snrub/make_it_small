@@ -63,6 +63,12 @@ impl BitWriter {
         self.buffer = 0;
         self.len = 0;
     }
+
+    pub fn take_bytes(&mut self) -> Vec<u8> {
+        let temp = self.output.clone();
+        self.output.clear();
+        temp
+    }
 }
 
 pub struct BitReader {
