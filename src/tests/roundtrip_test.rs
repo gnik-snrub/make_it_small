@@ -20,9 +20,8 @@ fn roundtrip_file_compression() {
         }
 
         let compressed = writer.output.clone();
-        let padding_bits = writer.padding_bits;
 
-        let header = write_header(&original, "test.txt", padding_bits);
+        let header = write_header(&original, "test.txt");
         let mut stitched = header.to_bytes();
         stitched.extend_from_slice(&compressed);
 

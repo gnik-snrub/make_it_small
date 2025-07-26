@@ -3,7 +3,7 @@ use crate::headers::{write_header, Headers};
 
 #[test]
 fn headers_round_trip() {
-    let original = write_header(&b"test".to_vec(), "testfile.txt", 3);
+    let original = write_header(&b"test".to_vec(), "testfile.txt");
 
     let bytes = original.clone().to_bytes();
     let reconstructed = match Headers::from_bytes(&bytes) {

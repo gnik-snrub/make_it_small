@@ -29,7 +29,7 @@ pub fn run_command() {
         Cli { command: Some(Command::Compress { name_in, mut name_out }) } => {
             let file = read_file(&name_in);
             let name = Path::new(&name_in).file_name().unwrap().to_str().unwrap();
-            let headers = write_header(&file, name, 0);
+            let headers = write_header(&file, name);
             let mut small_file = headers.to_bytes();
             small_file.extend_from_slice(&file);
             name_out.push_str(".small");
