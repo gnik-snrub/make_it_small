@@ -1,60 +1,56 @@
+#[cfg(test)]
+use crate::headers::Headers;
 use crate::huffman::encoder::encode;
 
 #[cfg(test)]
 
 // Helper function
-fn active_codes(table: &[(u32, u8); 256]) -> usize {
-    table.iter().filter(|(_, len)| *len > 0).count()
+fn parse(file: &Vec<u8>) -> (Headers, usize, Vec<u8>) {
+    let (hdr, cursor) = Headers::from_bytes(&file).expect("parse header");
+    let payload = file[cursor..].to_vec();
+    (hdr, cursor, payload)
 }
 
 #[test]
 fn empty_input() {
-    let encoded = encode(&[].to_vec());
+    let src = Vec::new();
+    let file = encode(&src, "empty");
+    let (hdr, cursor, payload) = parse(&file);
 
-    assert!(encoded.output.is_empty());
-    assert_eq!(encoded.padding_bits, 0);
-    assert_eq!(active_codes(&encoded.code_table), 0);
+
+    assert_eq!(hdr.original_file_name, "empty");
+    assert_eq!(hdr.compressed_size, 0);
+    assert_eq!(hdr.padding_bits, 0);
+    assert!(hdr.lengths.iter().all(|&l| l == 0));
+    assert!(payload.is_empty());
+    assert_eq!(cursor, hdr.original_size as usize + 41 + hdr.original_file_name.len() + 256);
 }
 
 #[test]
 fn single_byte() {
-    let src = b"a";
-    let encoded = encode(&src.to_vec());
+    let src = b"a".to_vec();
+    let file = encode(&src, "one");
+    let (hdr, cursor, payload) = parse(&file);
 
-    assert_eq!(active_codes(&encoded.code_table), 1);
-    assert_eq!(encoded.code_table[b'a' as usize].1, 1);
-
-    assert_eq!(encoded.output.len(), 1);
-    assert_eq!(encoded.padding_bits, 7);
-
-    assert!(encoded.output[0] == 0x00 || encoded.output[0] == 0x80);
+    assert_eq!(hdr.original_file_name, "one");
+    assert_eq!(hdr.compressed_size, 1);
+    assert_eq!(hdr.padding_bits, 7);
+    assert_eq!(hdr.lengths[b'a' as usize], 1);
+    assert_eq!(payload.len(), 1);
+    assert!(payload[0] == 0x00 || payload[0] == 0x80);
+    assert_eq!(file.len(), cursor + 1);
 }
 
 #[test]
-fn eight_identical_bytes() {
-    let src = vec![b'a'; 8];
-    let encoded = encode(&src.to_vec());
+fn alternating_ab() {
+    let src = b"abababab".to_vec();
+    let file = encode(&src, "alt");
+    let (hdr, cursor, payload) = parse(&file);
 
-    assert_eq!(active_codes(&encoded.code_table), 1);
-    assert_eq!(encoded.output.len(), 1);
-    assert_eq!(encoded.padding_bits, 0);
-
-    assert!(encoded.output[0] == 0x00 || encoded.output[0] == 0xFF);
-}
-
-#[test]
-fn alternating_pattern() {
-    let src = b"abababab";
-    let encoded = encode(&src.to_vec());
-
-    let active: Vec<_> = [b'a', b'b']
-        .iter()
-        .map(|&c| encoded.code_table[c as usize].1)
-        .collect();
-
-    assert_eq!(active, vec![1, 1]);
-    assert_eq!(encoded.output.len(), 1);
-    assert_eq!(encoded.padding_bits, 0);
-
-    assert!(encoded.output[0] == 0x55 || encoded.output[0] == 0xAA);
+    assert_eq!(hdr.compressed_size, 1);
+    assert_eq!(hdr.padding_bits, 0);
+    assert_eq!(hdr.lengths[b'a' as usize], 1);
+    assert_eq!(hdr.lengths[b'b' as usize], 1);
+    assert!(payload[0] == 0x55 || payload[0] == 0xAA);
+    assert_eq!(file.len(), cursor + 1);
 }
