@@ -14,14 +14,14 @@ pub struct Headers {
     pub padding_bits: u8,
 }
 
-pub fn write_header(file: &Vec<u8>, name: &str, padding_bits: usize) -> Headers {
+pub fn write_header(file: &Vec<u8>, name: &str, padding_bits: usize, compressed_size: u64) -> Headers {
     Headers {
         magic_bytes: MAGIC_BYTES,
         version: VERSION,
         flags: 0b0000_0000, // TODO - Create a bitmask from selected flags using consts
         original_size: file.len() as u64,
         original_file_name: name.to_string(),
-        compressed_size: 0, // TODO - Check output file sizes, and put here
+        compressed_size,
         // TODO - Randomize both values with a secure RNG
         salt_and_iv: [1234432112344321, 4321123443211234],
         padding_bits: padding_bits as u8
