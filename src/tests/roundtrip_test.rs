@@ -11,6 +11,7 @@ fn roundtrip_file_compression() {
     ];
 
     for path in test_files {
+
         let original = read_file(path);
 
         let mut writer = BitWriter::new();
@@ -21,7 +22,13 @@ fn roundtrip_file_compression() {
 
         let compressed = writer.output.clone();
 
-        let header = write_header(&original, "test.txt");
+        let mut header = write_header(&original, "test.txt");
+        header.tree = crate::huffman::tree::Node {
+            weight: 0,
+            symbol: Some(b'a'),
+            left: None,
+            right: None,
+        };
         let mut stitched = header.to_bytes();
         stitched.extend_from_slice(&compressed);
 

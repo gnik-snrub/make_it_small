@@ -1,6 +1,7 @@
 #[cfg(test)]
 use crate::headers::Headers;
-use crate::huffman::encoder::encode;
+use crate::huffman::{encoder::encode, tree::serialize_tree};
+
 
 #[cfg(test)]
 
@@ -18,12 +19,14 @@ fn empty_input() {
     let (hdr, cursor, payload) = parse(&file);
 
 
+    let mut tree_serial = Vec::new();
+    serialize_tree(&hdr.tree, &mut tree_serial);
+
     assert_eq!(hdr.original_file_name, "empty");
     assert_eq!(hdr.compressed_size, 0);
     assert_eq!(hdr.padding_bits, 0);
-    assert!(hdr.lengths.iter().all(|&l| l == 0));
     assert!(payload.is_empty());
-    assert_eq!(cursor, hdr.original_size as usize + 41 + hdr.original_file_name.len() + 256);
+    assert_eq!(cursor, hdr.original_size as usize + 43 + hdr.original_file_name.len() + tree_serial.len());
 }
 
 #[test]
@@ -35,7 +38,6 @@ fn single_byte() {
     assert_eq!(hdr.original_file_name, "one");
     assert_eq!(hdr.compressed_size, 1);
     assert_eq!(hdr.padding_bits, 7);
-    assert_eq!(hdr.lengths[b'a' as usize], 1);
     assert_eq!(payload.len(), 1);
     assert!(payload[0] == 0x00 || payload[0] == 0x80);
     assert_eq!(file.len(), cursor + 1);
@@ -49,8 +51,7 @@ fn alternating_ab() {
 
     assert_eq!(hdr.compressed_size, 1);
     assert_eq!(hdr.padding_bits, 0);
-    assert_eq!(hdr.lengths[b'a' as usize], 1);
-    assert_eq!(hdr.lengths[b'b' as usize], 1);
     assert!(payload[0] == 0x55 || payload[0] == 0xAA);
     assert_eq!(file.len(), cursor + 1);
 }
+

@@ -1,4 +1,4 @@
-use crate::constants::{MAGIC_BYTES, VERSION};
+use crate::{constants::{MAGIC_BYTES, VERSION}, huffman::tree::{deserialize_tree, serialize_tree, Node}};
 
 #[derive(Debug, Clone)]
 pub struct Headers {
@@ -10,7 +10,7 @@ pub struct Headers {
     pub compressed_size: u64,
     pub salt_and_iv: [u64; 2],
     pub padding_bits: u8,
-    pub lengths: [u8; 256],
+    pub tree: Node,
 }
 
 pub fn write_header(file: &Vec<u8>, name: &str) -> Headers {
@@ -24,7 +24,7 @@ pub fn write_header(file: &Vec<u8>, name: &str) -> Headers {
         // TODO - Randomize both values with a secure RNG
         salt_and_iv: [1234432112344321, 4321123443211234],
         padding_bits: 0,
-        lengths: [0u8; 256],
+        tree: Node { weight: 0, symbol: None, left: None, right: None },
     }
 }
 
@@ -42,7 +42,13 @@ impl Headers {
         bytes.extend_from_slice(&(self.salt_and_iv[0] as u64).to_le_bytes());
         bytes.extend_from_slice(&(self.salt_and_iv[1] as u64).to_le_bytes());
         bytes.extend_from_slice(&self.padding_bits.to_le_bytes());
-        bytes.extend_from_slice(&self.lengths);
+
+        let mut out: Vec<u8> = Vec::new();
+        serialize_tree(&self.tree, &mut out);
+
+        let tree_length = out.len() as u16;
+        bytes.extend_from_slice(&tree_length.to_le_bytes());
+        bytes.extend_from_slice(&out);
 
         bytes
     }
@@ -80,9 +86,13 @@ impl Headers {
         let padding_bits = bytes[cursor];
         cursor += 1;
 
-        let mut lengths = [0u8; 256];
-        lengths.copy_from_slice(&bytes[cursor .. cursor + 256]);
-        cursor += 256;
+        let tree_len = u16::from_le_bytes([bytes[cursor], bytes[cursor + 1]]);
+        cursor += 2;
+
+        let tree_slice = &bytes[cursor..cursor + tree_len as usize];
+        cursor += tree_len as usize;
+        let mut stream = tree_slice.iter().copied();
+        let tree = deserialize_tree(&mut stream);
 
         Ok((Headers {
            magic_bytes,
@@ -93,7 +103,7 @@ impl Headers {
            compressed_size,
            salt_and_iv: [salt, iv],
            padding_bits,
-           lengths,
+           tree
         }, cursor))
     }
 }

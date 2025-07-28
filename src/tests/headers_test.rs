@@ -3,7 +3,13 @@ use crate::headers::{write_header, Headers};
 
 #[test]
 fn headers_round_trip() {
-    let original = write_header(&b"test".to_vec(), "testfile.txt");
+    let mut original = write_header(&b"test".to_vec(), "testfile.txt");
+    original.tree = crate::huffman::tree::Node {
+        weight: 0,
+        symbol: Some(b'a'),
+        left: None,
+        right: None,
+    };
 
     let bytes = original.clone().to_bytes();
     let reconstructed = match Headers::from_bytes(&bytes) {

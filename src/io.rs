@@ -64,6 +64,23 @@ impl BitWriter {
         self.len = 0;
     }
 
+    pub fn finalize(&mut self) {
+        if self.len == 0 {
+            self.padding_bits = 0;
+            return
+        }
+
+        for _ in 0..(8 - self.len) {
+            self.buffer <<= 1;
+        }
+
+        self.output.push(self.buffer);
+        self.padding_bits = (8 - self.len) as usize;
+
+        self.buffer = 0;
+        self.len = 0;
+    }
+
     pub fn take_bytes(&mut self) -> Vec<u8> {
         let temp = self.output.clone();
         self.output.clear();
