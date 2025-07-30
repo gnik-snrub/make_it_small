@@ -15,19 +15,25 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 enum Command {
     Compress {
+        #[clap(index = 1)]
         name_in: String,
-        name_out: Option<String>
+
+        #[clap(index = 2)]
+        name_out: Option<String>,
+
+        #[clap(short, long, action = clap::ArgAction::SetTrue)]
+        ratio: bool,
     },
     Decompress {
         name_in: String,
-        name_out: Option<String>
+        name_out: Option<String>,
     }
 }
 
 pub fn run_command() {
     let tokens = Cli::parse();
     match tokens {
-        Cli { command: Some(Command::Compress { name_in, name_out }) } => {
+        Cli { command: Some(Command::Compress { name_in, name_out, ratio }) } => {
             let file = read_file(&name_in);
             let name = Path::new(&name_in).file_name().unwrap().to_str().unwrap();
             let small_file = encode(&file, name);
@@ -35,6 +41,11 @@ pub fn run_command() {
                 Some(name) => format!("{name}.small"),
                 None => format!("{}.small", name_in),
             };
+            if ratio {
+                let ratio = (small_file.len() as f64 / file.len() as f64) * 100.0;
+                let rounded = (ratio * 10.0).round() / 10.0;
+                println!("Compression Ratio: {}%", rounded);
+            }
             write_file(small_file, &output_path);
         },
         Cli { command: Some(Command::Decompress { name_in, name_out}) } => {
