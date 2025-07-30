@@ -16,10 +16,11 @@ pub struct Cli {
 enum Command {
     Compress {
         name_in: String,
-        name_out: String,
+        name_out: Option<String>
     },
     Decompress {
         name_in: String,
+        name_out: Option<String>
     }
 }
 
@@ -30,12 +31,20 @@ pub fn run_command() {
             let file = read_file(&name_in);
             let name = Path::new(&name_in).file_name().unwrap().to_str().unwrap();
             let small_file = encode(&file, name);
-            write_file(small_file, &name_out);
+            let output_path = match name_out {
+                Some(name) => format!("{name}.small"),
+                None => format!("{}.small", name_in),
+            };
+            write_file(small_file, &output_path);
         },
-        Cli { command: Some(Command::Decompress { name_in }) } => {
+        Cli { command: Some(Command::Decompress { name_in, name_out}) } => {
             let file = read_file(&name_in);
             let (decompressed, original_name) = decode(file);
-            write_file(decompressed, &format!("{}.remove_this", original_name));
+            let output_path = match name_out {
+                Some(name) => format!("{name}"),
+                None => format!("{original_name}"),
+            };
+            write_file(decompressed, &format!("{}", output_path));
         },
         Cli { command: None } => {
 
