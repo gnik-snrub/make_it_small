@@ -1,3 +1,4 @@
+use crate::flags::is_stored_raw;
 use crate::headers::Headers;
 use crate::constants::{MAGIC_BYTES, VERSION};
 use crate::io::BitReader;
@@ -21,6 +22,10 @@ pub fn decode(src: Vec<u8>) -> (Vec<u8>, String) {
     if header.version != VERSION {
         eprintln!("Error: Incorrect version");
         return (vec![], String::new())
+    }
+
+    if is_stored_raw(header.flags) {
+        return (Vec::from(&src[end_of_header..]), header.original_file_name)
     }
     
     let mut reader = BitReader::new(header.padding_bits as usize, &src[end_of_header..]);
