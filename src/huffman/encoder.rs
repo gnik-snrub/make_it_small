@@ -1,8 +1,9 @@
-use crate::{headers::write_header, io::BitWriter};
+use crate::{flags::flip_stored_raw, headers::write_header, io::BitWriter};
 
 use super::{freq::compute_frequencies, table::generate_code_table, tree::{build_huffman_tree, serialize_tree}};
 
 pub fn encode(src: &Vec<u8>, name: &str) -> Vec<u8> {
+    let mut flags: u8 = 0;
 
     let mut header = write_header(src, name);
 
@@ -24,7 +25,7 @@ pub fn encode(src: &Vec<u8>, name: &str) -> Vec<u8> {
     serialize_tree(&tree, &mut serialized_tree);
     let header_len = 43 + name.len() + serialized_tree.len();
     let mut out: Vec<u8> = Vec::with_capacity(header_len + src.len());
-    out.extend_from_slice(&header.to_bytes());
+    out.extend_from_slice(&header.clone().to_bytes());
 
     let mut writer = BitWriter::new();
 
@@ -41,13 +42,26 @@ pub fn encode(src: &Vec<u8>, name: &str) -> Vec<u8> {
     let padding_bits = writer.padding_bits as u8;
 
     let compressed_size = (out.len() - header_len) as u64;
+
     let mut final_header = write_header(src, name);
-    final_header.compressed_size = compressed_size;
-    final_header.padding_bits = padding_bits;
     final_header.tree = tree;
 
-    out[..header_len].copy_from_slice(&final_header.to_bytes());
+    if compressed_size >= header.original_size {
+        flip_stored_raw(&mut flags);
+        final_header.flags = flags;
 
+        final_header.compressed_size = header.original_size;
+        final_header.padding_bits = 0;
+
+        out.clear();
+        out.extend_from_slice(&final_header.to_bytes());
+        out.extend_from_slice(&src);
+    } else {
+        final_header.compressed_size = compressed_size;
+        final_header.padding_bits = padding_bits;
+
+        out[..header_len].copy_from_slice(&final_header.to_bytes());
+    }
     out
 }
 
