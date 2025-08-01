@@ -1,6 +1,6 @@
 #[cfg(test)]
 use crate::headers::Headers;
-use crate::huffman::{encoder::encode, tree::serialize_tree};
+use crate::{flags::is_stored_raw, huffman::{decoder::decode, encoder::encode, tree::serialize_tree}};
 
 
 #[cfg(test)]
@@ -37,9 +37,9 @@ fn single_byte() {
 
     assert_eq!(hdr.original_file_name, "one");
     assert_eq!(hdr.compressed_size, 1);
-    assert_eq!(hdr.padding_bits, 7);
+    assert_eq!(hdr.padding_bits, 0);
     assert_eq!(payload.len(), 1);
-    assert!(payload[0] == 0x00 || payload[0] == 0x80);
+    assert!(payload[0] == b'a');
     assert_eq!(file.len(), cursor + 1);
 }
 
@@ -55,3 +55,41 @@ fn alternating_ab() {
     assert_eq!(file.len(), cursor + 1);
 }
 
+#[test]
+fn compressible_text() {
+    let src = b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA".to_vec();
+    let file = encode(&src, "small.txt");
+    let (hdr, _, payload) = parse(&file);
+
+    assert!(!is_stored_raw(hdr.flags));
+    assert!(hdr.padding_bits > 0);
+    assert_ne!(payload, src);
+}
+
+#[test]
+fn borderline_raw_vs_compressed() {
+    let src = b"ABCABCABCABCABCABCABCABCABCABCABCABCABCABCABCABC".to_vec();
+    let file = encode(&src, "edge.txt");
+    let (hdr, _, payload) = parse(&file);
+
+    assert!(hdr.padding_bits <= 7);
+    assert_eq!(payload.len() as u64, hdr.compressed_size);
+}
+
+#[test]
+fn stored_raw_large_file() {
+    use rand::{Rng, SeedableRng};
+    use rand::rngs::StdRng;
+
+    let mut rng = StdRng::seed_from_u64(1337);
+    let src: Vec<u8> = (0..100_000).map(|_| rng.random()).collect();
+
+    let file = encode(&src, "dense.bin");
+    let (hdr, _, payload) = parse(&file);
+
+    assert!(is_stored_raw(hdr.flags));
+    assert_eq!(hdr.padding_bits, 0);
+    assert_eq!(hdr.compressed_size, hdr.original_size);
+    assert_eq!(payload.len(), hdr.original_size as usize);
+    assert_eq!(payload, src);
+}
