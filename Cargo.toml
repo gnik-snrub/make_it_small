@@ -7,3 +7,12 @@ edition = "2024"
 clap = { version = "4.5.41", features = ["derive"] }
 rand = "0.9.2"
 serde = { version = "1.0.219", features = ["derive"] }
+aes-gcm = { version = "0.10", features = ["std"] }
+pbkdf2 = "0.12"
+sha2 = "0.10"
+hmac = "0.12"
+generic-array = "0.14"
+typenum = "1.12"
+
+[dev-dependencies]
+tempfile = "3.2.0"

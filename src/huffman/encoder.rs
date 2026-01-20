@@ -1,16 +1,31 @@
-use crate::{flags::flip_stored_raw, headers::write_header, io::BitWriter};
+use crate::{flags::{flip_stored_raw, flip_encrypted}, headers::write_header, io::BitWriter, crypto::{self, encrypt}};
+use super::{freq::compute_frequencies, table::generate_code_table, tree::{build_huffman_tree}};
+use std::io::{Read, Write}; // Added for streaming traits
 
-use super::{freq::compute_frequencies, table::generate_code_table, tree::{build_huffman_tree, serialize_tree}};
+pub struct EncodeInfo {
+    pub original_size: u64,
+    pub compressed_size: u64,
+    pub padding_bits: u8,
+}
 
-pub fn encode(src: &Vec<u8>, name: &str) -> Vec<u8> {
-    let mut flags: u8 = 0;
+pub fn encode<R: Read, W: Write>(
+    reader: &mut R,
+    name: &str,
+    encrypt_password: Option<&str>,
+    writer: &mut W,
+) -> Result<EncodeInfo, Box<dyn std::error::Error>> {
+    // 1. Read entire input into memory to compute frequencies and build tree
+    // (This is a temporary step until a streaming frequency computation is implemented)
+    let mut src_data = Vec::new();
+    reader.read_to_end(&mut src_data)?;
 
-    let mut header = write_header(src, name);
+    let mut header = write_header(&src_data, name);
+    let mut flags = header.flags;
 
-    let freq = compute_frequencies(src);
+    let freq = compute_frequencies(&src_data);
 
     let (codes, lengths) = match build_huffman_tree(&freq) {
-        Some(tree) => { 
+        Some(tree) => {
             let table = generate_code_table(&tree);
             header.tree = tree;
             (table.map(|c| c.0), table.map(|c| c.1))
@@ -20,54 +35,81 @@ pub fn encode(src: &Vec<u8>, name: &str) -> Vec<u8> {
         }
     };
 
-    let tree = header.tree.clone();
-    let mut serialized_tree = Vec::new();
-    serialize_tree(&tree, &mut serialized_tree);
-    let header_len = 43 + name.len() + serialized_tree.len();
-    let mut out: Vec<u8> = Vec::with_capacity(header_len + src.len());
-    out.extend_from_slice(&header.clone().to_bytes());
+    // Buffer to hold compressed data before potential encryption
+    let mut compressed_buffer_for_encryption = Vec::new();
+    {
+        // Use BitWriter to write compressed data to an in-memory buffer
+        let mut bit_writer = BitWriter::new(&mut compressed_buffer_for_encryption);
 
-    let mut writer = BitWriter::new();
+        for b in &src_data {
+            let code = codes[*b as usize];
+            let len = lengths[*b as usize];
+            let bits = (code >> (32 - len)) & ((1u32 << len) - 1);
+            bit_writer.write_bits(bits, len)?;
+        }
 
-    for b in src {
-        let code= codes[*b as usize];
-        let len = lengths[*b as usize];
-        let bits = (code >> (32 - len)) & ((1u32 << len) - 1);
-        writer.write_bits(bits, len);
-        out.extend_from_slice(&writer.take_bytes());
+        bit_writer.finalize()?;
+        header.padding_bits = bit_writer.padding_bits as u8;
     }
 
-    writer.finalize();
-    out.extend_from_slice(&writer.take_bytes());
-    let padding_bits = writer.padding_bits as u8;
 
-    let compressed_size = (out.len() - header_len) as u64;
+    let mut final_payload_bytes = compressed_buffer_for_encryption;
 
-    let mut final_header = write_header(src, name);
-    final_header.tree = tree;
 
-    if compressed_size >= header.original_size {
-        flip_stored_raw(&mut flags);
-        final_header.flags = flags;
+    // Apply encryption if password is provided
+    if let Some(password) = encrypt_password {
+        let salt = crypto::generate_random_bytes::<{crypto::SALT_LEN}>();
+        let iv = crypto::generate_random_bytes::<{crypto::IV_LEN}>();
 
-        final_header.compressed_size = header.original_size;
-        final_header.padding_bits = 0;
+        let key = crypto::derive_key(password.as_bytes(), &salt);
 
-        out.clear();
-        out.extend_from_slice(&final_header.to_bytes());
-        out.extend_from_slice(&src);
+        let (encrypted_data, tag) = encrypt(&final_payload_bytes, &key, &iv)?;
+
+        final_payload_bytes = encrypted_data;
+        header.salt = salt;
+        header.iv = iv;
+        header.tag = tag;
+        flip_encrypted(&mut flags);
+    }
+
+    // Determine final header values based on compression results and encryption
+    let compressed_size = final_payload_bytes.len() as u64;
+
+    let mut final_header_to_write = write_header(&src_data, name);
+    final_header_to_write.tree = header.tree;
+    final_header_to_write.flags = flags;
+    final_header_to_write.padding_bits = header.padding_bits;
+    final_header_to_write.salt = header.salt;
+    final_header_to_write.iv = header.iv;
+    final_header_to_write.tag = header.tag;
+
+
+    if compressed_size >= header.original_size && encrypt_password.is_none() {
+        // Only store raw if not encrypted and compression makes it larger
+        // If encrypted, we always use the encrypted payload, even if larger
+        flip_stored_raw(&mut final_header_to_write.flags);
+
+        final_header_to_write.compressed_size = header.original_size;
+        final_header_to_write.padding_bits = 0;
+
+        // Write the final header
+        writer.write_all(&final_header_to_write.clone().to_bytes())?;
+        
+        // Write original raw data
+        writer.write_all(&src_data)?;
     } else {
-        final_header.compressed_size = compressed_size;
-        final_header.padding_bits = padding_bits;
+        final_header_to_write.compressed_size = compressed_size;
 
-        out[..header_len].copy_from_slice(&final_header.to_bytes());
+        // Write the final header
+        writer.write_all(&final_header_to_write.clone().to_bytes())?;
+        
+        // Write the compressed (or encrypted compressed) payload
+        writer.write_all(&final_payload_bytes)?;
     }
-    out
-}
-
-pub struct Encoded {
-    pub output: Vec<u8>,
-    pub padding_bits: u8,
-    pub code_table: [(u32, u8); 256],
-    pub lengths: [u8; 256],
+    
+    Ok(EncodeInfo {
+        original_size: header.original_size, // Original uncompressed size
+        compressed_size: final_header_to_write.compressed_size, // Final (potentially encrypted) compressed size
+        padding_bits: final_header_to_write.padding_bits, // Final padding
+    })
 }

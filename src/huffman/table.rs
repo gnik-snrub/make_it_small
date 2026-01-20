@@ -17,13 +17,12 @@ fn walk(table: &mut [(u32, u8); 256], node: &Node, curr_bits: u32, curr_len: u8)
         let effective_len = if curr_len == 0 { 1 } else { curr_len };
         let packed = curr_bits << (32 - effective_len);
         table[sym.unwrap() as usize] = (packed, effective_len);
-        return;
     } else {
         if let Some(left_node) = left {
-            walk(table, &left_node, curr_bits << 1, curr_len + 1);
+            walk(table, left_node, curr_bits << 1, curr_len + 1);
         }
         if let Some(right_node) = right {
-            walk(table, &right_node, (curr_bits << 1) | 1, curr_len + 1);
+            walk(table, right_node, (curr_bits << 1) | 1, curr_len + 1);
         }
     }
 }

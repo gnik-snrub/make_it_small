@@ -7,7 +7,10 @@ pub mod io;
 pub mod tests;
 pub mod huffman;
 pub mod flags;
+pub mod checksum;
+pub mod archive;
+pub mod crypto;
 
 fn main() {
-    run_command();
+    let _ = run_command();
 }

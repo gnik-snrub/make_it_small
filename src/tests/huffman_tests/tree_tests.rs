@@ -37,7 +37,7 @@ fn tree_leaf_weights_sum_to_root() {
     let root = build_huffman_tree(&freq).unwrap();
 
     fn recurse(n: &Node) -> u64 {
-        if let Some(_) = n.symbol {
+        if n.symbol.is_some() {
             return n.weight;
         }
         recurse(n.left.as_ref().unwrap()) + recurse(n.right.as_ref().unwrap())

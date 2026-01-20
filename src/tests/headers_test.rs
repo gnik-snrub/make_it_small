@@ -3,7 +3,7 @@ use crate::headers::{write_header, Headers};
 
 #[test]
 fn headers_round_trip() {
-    let mut original = write_header(&b"test".to_vec(), "testfile.txt");
+    let mut original = write_header(b"test".as_ref(), "testfile.txt");
     original.tree = crate::huffman::tree::Node {
         weight: 0,
         symbol: Some(b'a'),
@@ -12,8 +12,8 @@ fn headers_round_trip() {
     };
 
     let bytes = original.clone().to_bytes();
-    let reconstructed = match Headers::from_bytes(&bytes) {
-        Ok((header, _)) => {
+    let reconstructed = match Headers::from_reader(&mut std::io::Cursor::new(&bytes)) {
+        Ok(header) => {
             header
         }
         Err(e) => {
@@ -27,6 +27,9 @@ fn headers_round_trip() {
     assert_eq!(original.original_size, reconstructed.original_size);
     assert_eq!(original.compressed_size, reconstructed.compressed_size);
     assert_eq!(original.original_file_name, reconstructed.original_file_name);
-    assert_eq!(original.salt_and_iv, reconstructed.salt_and_iv);
+    assert_eq!(original.salt, reconstructed.salt);
+    assert_eq!(original.iv, reconstructed.iv);
+    assert_eq!(original.tag, reconstructed.tag);
     assert_eq!(original.padding_bits, reconstructed.padding_bits);
+    assert_eq!(original.checksum, reconstructed.checksum);
 }
