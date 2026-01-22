@@ -5,6 +5,7 @@ mod tests {
     use tempfile::tempdir;
     use crate::archive::{add_to_archive, create_archive, extract_archive, list_contents, extract_file};
     use crate::huffman::encoder::encode;
+    use crate::headers::Headers;
     use std::io::{BufReader, BufWriter, Cursor, Write}; // Added for streaming tests
 
     // Helper function to recursively compare two directories
@@ -76,7 +77,8 @@ mod tests {
 
         // 4. Extract the archive
         let mut archive_reader = BufReader::new(File::open(&archive_path).unwrap());
-        extract_archive(&mut archive_reader, &output_dir_for_extraction, None).unwrap();
+        let master_header = Headers::from_reader(&mut archive_reader).unwrap();
+        extract_archive(master_header, &mut archive_reader, &output_dir_for_extraction, None).unwrap();
 
         // 5. Verify the extracted contents using the helper function
         compare_dirs(&input_dir, &output_dir_for_extraction).unwrap();
@@ -85,34 +87,42 @@ mod tests {
     #[test]
     fn test_add_to_single_file_archive() {
         let dir = tempdir().unwrap();
-        // 1. Create a single-file .small
-        let file1_content = b"This is the first file.".to_vec();
-        let mut input_reader1 = Cursor::new(&file1_content);
-        let mut encoded_file1_buffer = Vec::new();
-        encode(&mut input_reader1, "file1.txt", None, &mut encoded_file1_buffer).unwrap();
+        let input_dir = dir.path().join("input_initial");
+        fs::create_dir(&input_dir).unwrap();
+        fs::write(input_dir.join("file1.txt"), "This is the first file content.").unwrap();
 
-        // 2. Create a new file to add
-        let file2_content = b"This is the second file, added later.".to_vec();
-        let mut input_reader2 = Cursor::new(&file2_content);
-        let mut encoded_file2_buffer = Vec::new();
-        encode(&mut input_reader2, "file2.txt", None, &mut encoded_file2_buffer).unwrap();
-
-        // 3. Add the new file to the single-file archive
-        let combined_archive_bytes = add_to_archive(encoded_file1_buffer, encoded_file2_buffer).unwrap();
+        let initial_archive_path = dir.path().join("initial.small");
+        let mut initial_archive_writer = BufWriter::new(File::create(&initial_archive_path).unwrap());
+        create_archive(&input_dir, None, &mut initial_archive_writer).unwrap();
+        initial_archive_writer.flush().unwrap();
         
-        // 4. Write and extract the new archive
-        let archive_path = dir.path().join("combined.small");
-        fs::write(&archive_path, combined_archive_bytes).unwrap();
+        // 2. Prepare new file to add
+        let file2_content = b"This is the second file, added later.".to_vec();
+        let mut input_reader_file2 = Cursor::new(&file2_content);
+        let mut encoded_file2_buffer = Vec::new();
+        encode(&mut input_reader_file2, "file2.txt", None, &mut encoded_file2_buffer).unwrap();
+        let mut new_content_reader = Cursor::new(encoded_file2_buffer);
+
+        // 3. Add the new file to the existing archive
+        let final_archive_path = dir.path().join("final_combined.small");
+        let mut existing_archive_file = File::open(&initial_archive_path).unwrap();
+        let mut final_archive_file = File::create(&final_archive_path).unwrap();
+
+        add_to_archive(&mut existing_archive_file, &mut new_content_reader, &mut final_archive_file).unwrap();
+        final_archive_file.flush().unwrap();
+
+        // 4. Extract and verify the new archive
         let output_dir = dir.path().join("output");
         fs::create_dir(&output_dir).unwrap();
         
-        let mut archive_reader = BufReader::new(File::open(&archive_path).unwrap());
-        extract_archive(&mut archive_reader, &output_dir, None).unwrap();
+        let mut archive_reader = BufReader::new(File::open(&final_archive_path).unwrap());
+        let master_header = Headers::from_reader(&mut archive_reader).unwrap();
+        extract_archive(master_header, &mut archive_reader, &output_dir, None).unwrap();
 
         // 5. Verify contents
-        let extracted_file1 = fs::read(output_dir.join("file1.txt")).unwrap();
+        let extracted_file1 = fs::read_to_string(output_dir.join("file1.txt")).unwrap();
         let extracted_file2 = fs::read(output_dir.join("file2.txt")).unwrap();
-        assert_eq!(extracted_file1, file1_content);
+        assert_eq!(extracted_file1, "This is the first file content.");
         assert_eq!(extracted_file2, file2_content);
     }
 
@@ -136,16 +146,21 @@ mod tests {
         let mut encoded_file3_buffer = Vec::new();
         encode(&mut input_reader3, "sub/file3.txt", None, &mut encoded_file3_buffer).unwrap();
 
-        // 3. Add the new file to the existing archive
-        let existing_archive_bytes = fs::read(&archive_path).unwrap();
-        let updated_archive_bytes = add_to_archive(existing_archive_bytes, encoded_file3_buffer).unwrap();
+        // 3. Add the new file to the existing archive using streaming
+        let mut existing_archive_reader = Cursor::new(fs::read(&archive_path).unwrap());
+        let mut new_content_reader = Cursor::new(encoded_file3_buffer);
+        let mut output_writer_cursor = Cursor::new(Vec::new());
+        add_to_archive(&mut existing_archive_reader, &mut new_content_reader, &mut output_writer_cursor).unwrap();
+        let updated_archive_bytes = output_writer_cursor.into_inner();
+
         fs::write(&archive_path, updated_archive_bytes).unwrap();
 
         // 4. Extract the updated archive
         let output_dir = dir.path().join("output");
         fs::create_dir(&output_dir).unwrap();
         let mut archive_reader2 = BufReader::new(File::open(&archive_path).unwrap());
-        extract_archive(&mut archive_reader2, &output_dir, None).unwrap();
+        let master_header = Headers::from_reader(&mut archive_reader2).unwrap();
+        extract_archive(master_header, &mut archive_reader2, &output_dir, None).unwrap();
         
         // 5. Verify all files
         let extracted_file1 = fs::read_to_string(output_dir.join("file1.txt")).unwrap();
@@ -283,21 +298,24 @@ mod tests {
 
         // 2. Extract with correct password
         let mut archive_reader1 = BufReader::new(File::open(&archive_path).unwrap());
-        extract_archive(&mut archive_reader1, &output_dir, Some(password)).unwrap();
+        let master_header1 = Headers::from_reader(&mut archive_reader1).unwrap();
+        extract_archive(master_header1, &mut archive_reader1, &output_dir, Some(password)).unwrap();
         compare_dirs(&input_dir, &output_dir).unwrap();
 
         // 3. Extract with wrong password (should fail)
         let output_dir_wrong_pass = dir.path().join("extracted_wrong_pass");
         fs::create_dir(&output_dir_wrong_pass).unwrap();
         let mut archive_reader2 = BufReader::new(File::open(&archive_path).unwrap());
-        let result_wrong = extract_archive(&mut archive_reader2, &output_dir_wrong_pass, Some(wrong_password));
+        let master_header2 = Headers::from_reader(&mut archive_reader2).unwrap();
+        let result_wrong = extract_archive(master_header2, &mut archive_reader2, &output_dir_wrong_pass, Some(wrong_password));
         assert!(result_wrong.is_err());
 
         // 4. Extract without password (should fail)
         let output_dir_no_pass = dir.path().join("extracted_no_pass");
         fs::create_dir(&output_dir_no_pass).unwrap();
         let mut archive_reader3 = BufReader::new(File::open(&archive_path).unwrap());
-        let result_no_pass = extract_archive(&mut archive_reader3, &output_dir_no_pass, None);
+        let master_header3 = Headers::from_reader(&mut archive_reader3).unwrap();
+        let result_no_pass = extract_archive(master_header3, &mut archive_reader3, &output_dir_no_pass, None);
         assert!(result_no_pass.is_err());
     }
 }

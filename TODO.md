@@ -23,6 +23,15 @@
 - [x] Fix `tests::archive_tests::tests::test_encrypted_archive_roundtrip` (invalid UTF-8 sequence in embedded header).
 - [x] Fix `tests::archive_tests::tests::test_add_to_existing_archive` (No such file or directory).
 
+## Implement Streaming
+
+- [x] Refactor `cli.rs` Decompress command to stream initial compressed file loading.
+- [x] Refactor `archive.rs` `extract_archive` to accept an already-opened `BufReader`.
+- [x] Refactor `archive.rs` `create_archive` to stream encoded data directly to the writer, avoiding `all_encoded_files_bytes: Vec<u8>`.
+- [x] Refactor `archive.rs` `add_to_archive` to stream existing and new content.
+- [x] Refactor `cli.rs` Compress command `add` option to stream existing and new content.
+- [x] Replace `io::read_file` and `io::write_file` usages with direct `File` or `BufReader`/`BufWriter` operations.
+
 ## Future Features
 
 - [ ] Verify `STORED_RAW` flag implementation against `REFERENCE.md`.

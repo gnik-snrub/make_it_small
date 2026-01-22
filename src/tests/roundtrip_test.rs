@@ -1,8 +1,8 @@
-use crate::io::read_file;
 #[cfg(test)]
 #[test]
 fn roundtrip_file_compression() {
     use crate::huffman::{encoder::encode, decoder::decode};
+    use crate::io::read_file;
     use std::io::Cursor;
     use crate::headers::Headers; // Added import
 
