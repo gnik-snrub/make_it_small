@@ -4,12 +4,12 @@
 
 - [x] Add `#[derive(Debug)]` to `DecodeInfo` in `src/huffman/decoder.rs`.
 - [x] Update calls to `decode` in `src/tests/huffman_tests/decoder_tests.rs` to pass the `Headers` struct.
-- [ ] Remove unused imports and variables across the project.
+- [x] Remove unused imports and variables across the project.
 - [x] Fix `E0382: use of moved value: embedded_header` in `archive.rs`.
 
 ## Improve Code Quality
 
-- [ ] Address all warnings from `cargo test`.
+- [x] Address all warnings from `cargo test`.
 - [x] Fix `tests::roundtrip_test::test_encrypted_file_roundtrip` (error message mismatch).
 - [ ] Implement `HAS_CHECKSUM` flag integration.
 - [ ] Implement `ENCRYPTED` flag integration for adding to archives.

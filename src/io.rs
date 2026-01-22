@@ -92,7 +92,7 @@ pub struct BitReader<R: Read> {
 }
 
 impl<R: Read> BitReader<R> {
-    pub fn new(padding_bits: usize, reader: R) -> BitReader<R> {
+    pub fn new(_padding_bits: usize, reader: R) -> BitReader<R> {
         BitReader {
             reader,
             buffer: [0; 4096],

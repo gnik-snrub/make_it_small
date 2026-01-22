@@ -207,7 +207,7 @@ pub fn list_contents<R: Read + Seek>(reader: &mut R) -> std::io::Result<Vec<Stri
 
     if flags::is_archive(master_header.flags) {
         loop {
-            let embedded_header_start_pos = reader.seek(std::io::SeekFrom::Current(0))
+            let _embedded_header_start_pos = reader.seek(std::io::SeekFrom::Current(0))
                 .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to seek reader: {}", e)))?;
 
             let embedded_header_result = Headers::from_reader(reader);
@@ -253,8 +253,7 @@ pub fn extract_file<R: Read + Seek>(
     }
 
     loop {
-        let embedded_header_start_pos = reader.seek(std::io::SeekFrom::Current(0))
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to seek reader: {}", e)))?;
+                    let _embedded_header_start_pos = reader.seek(std::io::SeekFrom::Current(0))            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to seek reader: {}", e)))?;
 
         let embedded_header_result = Headers::from_reader(reader);
         let embedded_header = match embedded_header_result {

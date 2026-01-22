@@ -1,6 +1,6 @@
 #[cfg(test)]
 use crate::headers::Headers;
-use crate::{flags::is_stored_raw, huffman::{encoder::encode, tree::serialize_tree}};
+use crate::{flags::is_stored_raw, huffman::encoder::encode};
 use std::io::Cursor;
 
 
@@ -108,7 +108,7 @@ fn stored_raw_large_file() {
     use std::io::Cursor;
 
     let mut rng = StdRng::seed_from_u64(1337);
-    let mut src: Vec<u8> = (0..100_000).map(|_| rng.random::<u8>()).collect();
+    let src: Vec<u8> = (0..100_000).map(|_| rng.random::<u8>()).collect();
 
     let mut input_reader = Cursor::new(&src);
     let mut encoded_output_buffer = Vec::new();

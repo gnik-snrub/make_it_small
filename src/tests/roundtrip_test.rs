@@ -30,7 +30,7 @@ fn roundtrip_file_compression() {
         let header = Headers::from_reader(&mut encoded_cursor).expect("Failed to read header for decode"); // Read header
         let mut decoded_output_buffer = Vec::new(); // Corrected variable name
 
-        let decode_info = decode(header, &mut encoded_cursor, None, &mut decoded_output_buffer) // Updated call
+        let _decode_info = decode(header, &mut encoded_cursor, None, &mut decoded_output_buffer) // Updated call
             .expect("Decoding failed");
 
         assert_eq!(original_data, decoded_output_buffer); // Corrected variable name
@@ -62,7 +62,7 @@ fn test_encrypted_file_roundtrip() {
     let header = Headers::from_reader(&mut encoded_cursor).expect("Failed to read header for decode");
     let mut decoded_output_buffer = Vec::new();
 
-    let decode_info = decode(header.clone(), &mut encoded_cursor, Some(password), &mut decoded_output_buffer)
+    let _decode_info = decode(header.clone(), &mut encoded_cursor, Some(password), &mut decoded_output_buffer)
         .expect("Decryption with correct password failed");
     assert_eq!(original_data.as_ref(), decoded_output_buffer.as_slice()); // Corrected variable name
 

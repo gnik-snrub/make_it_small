@@ -167,7 +167,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
             }
         },
         Cli { command: Some(Command::Decompress { name_in, name_out, password}) } => {
-            let input_path = Path::new(&name_in);
+            let _input_path = Path::new(&name_in);
             let file_bytes = read_file(&name_in).map_err(|e| {
                 eprintln!("Error reading input file: {}", e);
                 Box::new(e) as Box<dyn std::error::Error>
@@ -240,7 +240,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
 
                 let single_file_header = Headers::from_reader(&mut input_file)?; // Read the header specifically for this decode call
 
-                let decode_info = decode(single_file_header, &mut input_file, decrypt_password, &mut output_file).map_err(|e| {
+                let _decode_info = decode(single_file_header, &mut input_file, decrypt_password, &mut output_file).map_err(|e| {
                     eprintln!("Error decompressing file: {}", e);
                     e
                 })?;

@@ -1,5 +1,4 @@
 use crate::{constants::{MAGIC_BYTES, VERSION}, huffman::tree::{deserialize_tree, serialize_tree, Node}};
-use crate::checksum::adler32;
 use std::io::Read;
 
 #[derive(Debug, Clone)]

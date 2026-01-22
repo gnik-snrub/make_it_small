@@ -1,5 +1,5 @@
 use std::io::Read;
-use crate::checksum::{adler32_stream_update, adler32_stream_finalize, MOD_ADLER};
+use crate::checksum::{adler32_stream_update, adler32_stream_finalize};
 
 pub fn compute_frequencies<R: Read>(reader: &mut R) -> std::io::Result<([u64; 256], u32, u64)> { // Return type change
     let mut freq = [0u64; 256];
