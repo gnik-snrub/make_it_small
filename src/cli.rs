@@ -94,10 +94,12 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                                                             Box::new(e) as Box<dyn std::error::Error>                            })?;
                             temp_bytes
                         } else {
-                            let file_content = read_file(&name_in).unwrap();
+                            let mut input_file_to_add = BufReader::new(File::open(&name_in).map_err(|e| {
+                                eprintln!("Error opening input file '{}' for add operation: {}", name_in, e);
+                                Box::new(e) as Box<dyn std::error::Error>
+                            })?);
                             let mut encoded_file_bytes_buffer = Vec::new();
-                            let mut file_content_cursor = Cursor::new(&file_content);
-                            encode(&mut file_content_cursor, input_path.file_name().unwrap().to_str().unwrap(), password.as_deref(), &mut encoded_file_bytes_buffer).map_err(|e| {
+                            encode(&mut input_file_to_add, input_path.file_name().unwrap().to_str().unwrap(), password.as_deref(), &mut encoded_file_bytes_buffer).map_err(|e| {
                                                             eprintln!("Error compressing file for add operation: {}", e);
                                                             e                            })?;
                             encoded_file_bytes_buffer
@@ -236,7 +238,9 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 };
 
-                let decode_info = decode(&mut input_file, decrypt_password, &mut output_file).map_err(|e| {
+                let single_file_header = Headers::from_reader(&mut input_file)?; // Read the header specifically for this decode call
+
+                let decode_info = decode(single_file_header, &mut input_file, decrypt_password, &mut output_file).map_err(|e| {
                     eprintln!("Error decompressing file: {}", e);
                     e
                 })?;

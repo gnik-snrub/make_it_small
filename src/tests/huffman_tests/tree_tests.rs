@@ -1,5 +1,6 @@
 #[cfg(test)]
 use crate::huffman::{freq::compute_frequencies, tree::{build_huffman_tree, Node}};
+use std::io::Cursor;
 
 #[test]
 fn tree_empty_returns_none() {
@@ -21,7 +22,8 @@ fn tree_single_symbol() {
 #[test]
 fn tree_hellow_world_total_weight() {
     let buf = b"hello world";
-    let freq = compute_frequencies(buf);
+    let mut cursor = Cursor::new(buf);
+    let (freq, _, _) = compute_frequencies(&mut cursor).unwrap();
     let root = build_huffman_tree(&freq).unwrap();
 
     assert_eq!(root.weight, buf.len() as u64);

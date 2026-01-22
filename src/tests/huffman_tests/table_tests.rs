@@ -1,9 +1,11 @@
 use crate::huffman::{freq::compute_frequencies, table::generate_code_table, tree::build_huffman_tree};
+use std::io::Cursor;
 
 #[cfg(test)]
 // Helper function
 fn table_for(buf: &[u8]) -> [(u32, u8); 256] {
-    let freq = compute_frequencies(buf);
+    let mut cursor = Cursor::new(buf);
+    let (freq, _, _) = compute_frequencies(&mut cursor).unwrap();
     let root = build_huffman_tree(&freq).unwrap();
     generate_code_table(&root)
 }
@@ -52,7 +54,8 @@ fn codes_are_prefix_free() {
 #[test]
 fn encoded_bit_count_matches_formula() {
     let buf = b"some reasonably long sample text to vary frequencies";
-    let freq = compute_frequencies(buf);
+    let mut cursor = Cursor::new(buf);
+    let (freq, _, _) = compute_frequencies(&mut cursor).unwrap();
     let root = build_huffman_tree(&freq).unwrap();
     let table = generate_code_table(&root);
 

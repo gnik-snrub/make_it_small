@@ -1,11 +1,13 @@
 use crate::huffman::freq::compute_frequencies;
+use std::io::Cursor;
 
 #[cfg(test)]
 
 #[test]
 fn freq_empty_slice() {
     let buf: &[u8] = b"";
-    let table = compute_frequencies(buf);
+    let mut cursor = Cursor::new(buf);
+    let (table, _, _) = compute_frequencies(&mut cursor).unwrap();
 
     assert!(table.iter().all(|&c| c == 0));
 }
@@ -13,7 +15,8 @@ fn freq_empty_slice() {
 #[test]
 fn freq_single_byte() {
     let buf: &[u8] = &[42];
-    let table = compute_frequencies(buf);
+    let mut cursor = Cursor::new(buf);
+    let (table, _, _) = compute_frequencies(&mut cursor).unwrap();
 
     assert_eq!(table[42], 1);
     assert_eq!(table.iter().sum::<u64>(), 1);
@@ -23,7 +26,8 @@ fn freq_single_byte() {
 fn freq_known_mix() {
     // 0x3, 1x2, 2x1
     let buf: &[u8] = &[0, 0, 0, 1, 1, 2];
-    let table = compute_frequencies(buf);
+    let mut cursor = Cursor::new(buf);
+    let (table, _, _) = compute_frequencies(&mut cursor).unwrap();
 
     assert_eq!(table[0], 3);
     assert_eq!(table[1], 2);
@@ -34,7 +38,8 @@ fn freq_known_mix() {
 #[test]
 fn freq_hello_world() {
     let buf: &[u8] = b"hello world";
-    let table = compute_frequencies(buf);
+    let mut cursor = Cursor::new(buf);
+    let (table, _, _) = compute_frequencies(&mut cursor).unwrap();
 
     assert_eq!(table[b'h' as usize], 1);
     assert_eq!(table[b'e' as usize], 1);

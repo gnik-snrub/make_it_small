@@ -1,26 +1,29 @@
 # TODO
 
-- [x] Fix `gen` keyword error in `src/tests/huffman_tests/encoder_tests.rs`.
-- [x] Fix missing imports in `src/cli.rs` (including `BufReader`, `BufWriter`, `Headers`, `flags`, `archive` functions).
-- [x] Fix `output_path_str` scope error in `src/cli.rs`.
-- [x] Fix missing imports in `src/io.rs`.
-- [x] Fix missing imports in `src/tests/roundtrip_test.rs`.
-- [x] Fix missing `File` type in `src/tests/archive_tests.rs`.
-- [x] Fix `Read` trait error in `src/archive.rs`.
-- [x] Re-examine `src/tests/huffman_tests/encoder_tests.rs:109:53` for `gen` keyword error.
-- [x] Change `run_command` return type in `src/cli.rs` to `Result<(), Box<dyn std::error::Error>>` and propagate errors.
-    - [x] Correct error propagation in `map_err` closures in `src/cli.rs`.
-    - [x] Fix `return;` in `src/cli.rs` to `return Ok(());`.
-- [x] Replace `Headers::from_bytes` with `Headers::from_reader` in `src/cli.rs` and `src/tests/headers_test.rs`.
-    - [x] Fix `Headers::from_reader` usage in `src/cli.rs` (destructuring `Ok((hdr, len))` to `Ok(hdr)`).
-    - [x] Fix `Headers::from_reader` usage in `src/tests/headers_test.rs` (destructuring `Ok((header, _))` to `Ok(header)`).
-- [x] Fix `return;` in `BitWriter::write_bits` in `src/io.rs` to `return Ok(());`.
-- [x] Fix `BitWriter::new()` and `writer.output` errors in `src/tests/io_tests.rs` (provide mock writer and read from it).
-    - [x] Fix `E0277: can't compare Option<u8> with {integer}` in `src/tests/io_tests.rs`.
-    - [x] Fix `E0502: cannot borrow `buffer` as immutable because it is also borrowed as mutable` in `src/tests/io_tests.rs`.
-- [x] Handle `?` operator error conversion in `src/archive.rs` (`.map_err(...)`).
-- [x] Add `+ Seek` trait bound to `reader` in `src/archive.rs` functions.
-- [x] Fix `E0382: use of moved value` in `src/huffman/encoder.rs`.
-- [x] Refactor `map_err` closures in `src/cli.rs` causing `E0277` errors by separating `eprintln!` and explicitly matching `Result` to handle errors.
-- [x] Run `cargo test` and verify all tests pass.
-- [x] Remove unused imports.
+## Fix Compilation Errors
+
+- [x] Add `#[derive(Debug)]` to `DecodeInfo` in `src/huffman/decoder.rs`.
+- [x] Update calls to `decode` in `src/tests/huffman_tests/decoder_tests.rs` to pass the `Headers` struct.
+- [ ] Remove unused imports and variables across the project.
+- [x] Fix `E0382: use of moved value: embedded_header` in `archive.rs`.
+
+## Improve Code Quality
+
+- [ ] Address all warnings from `cargo test`.
+- [x] Fix `tests::roundtrip_test::test_encrypted_file_roundtrip` (error message mismatch).
+- [ ] Implement `HAS_CHECKSUM` flag integration.
+- [ ] Implement `ENCRYPTED` flag integration for adding to archives.
+- [ ] Implement checksum verification in `cli.rs`.
+
+## Fix Archive/Header Related Test Failures
+
+- [x] Fix `tests::archive_tests::tests::test_archive_roundtrip` (NUL byte/invalid UTF-8 in filename).
+- [x] Fix `tests::archive_tests::tests::test_list_archive_contents` (returns empty list).
+- [x] Fix `tests::archive_tests::tests::test_extract_single_file_from_archive` (file not found).
+- [x] Fix `tests::archive_tests::tests::test_encrypted_archive_roundtrip` (invalid UTF-8 sequence in embedded header).
+- [x] Fix `tests::archive_tests::tests::test_add_to_existing_archive` (No such file or directory).
+
+## Future Features
+
+- [ ] Verify `STORED_RAW` flag implementation against `REFERENCE.md`.
+- [ ] Verify the file format implementation against `REFERENCE.md`.

@@ -24,14 +24,16 @@ fn empty_input() {
 
     let (hdr, payload) = parse(&encoded_output_buffer);
 
-
-    let mut tree_serial = Vec::new();
-    serialize_tree(&hdr.tree, &mut tree_serial);
+    // Calculate the expected total size for an empty file (header only)
+    let mut dummy_header_for_size_calc = Headers::new();
+    dummy_header_for_size_calc.original_file_name = "empty".to_string(); // Use the same name as in the test
+    let expected_total_output_size = dummy_header_for_size_calc.to_bytes().len() as u64;
 
     assert_eq!(hdr.original_file_name, "empty");
-    assert_eq!(hdr.compressed_size, 0);
+    assert_eq!(hdr.compressed_size, 0); // For empty input, there's no compressed payload
     assert_eq!(hdr.padding_bits, 0);
     assert!(payload.is_empty());
+    assert_eq!(encoded_output_buffer.len() as u64, expected_total_output_size);
 }
 
 #[test]

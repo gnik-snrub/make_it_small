@@ -1,4 +1,5 @@
 use crate::huffman::{decoder::decode, encoder::encode};
+use crate::headers::Headers;
 
 
 
@@ -14,8 +15,9 @@ fn empty_round_trip() {
         .expect("Encoding failed");
 
     let mut input_reader_decode = Cursor::new(encoded_output_buffer);
+    let header = Headers::from_reader(&mut input_reader_decode).expect("Decoding failed");
     let mut decompressed_output_buffer = Vec::new();
-    let _decode_info = decode(&mut input_reader_decode, None, &mut decompressed_output_buffer)
+    let _decode_info = decode(header, &mut input_reader_decode, None, &mut decompressed_output_buffer)
         .expect("Decoding failed");
 
     assert!(decompressed_output_buffer.is_empty());
@@ -32,8 +34,9 @@ fn single_byte_round_trip() {
         .expect("Encoding failed");
 
     let mut input_reader_decode = Cursor::new(encoded_output_buffer);
+    let header = Headers::from_reader(&mut input_reader_decode).expect("Decoding failed");
     let mut decompressed_output_buffer = Vec::new();
-    let _decode_info = decode(&mut input_reader_decode, None, &mut decompressed_output_buffer)
+    let _decode_info = decode(header, &mut input_reader_decode, None, &mut decompressed_output_buffer)
         .expect("Decoding failed");
 
     assert_eq!(decompressed_output_buffer, src);
@@ -50,8 +53,9 @@ fn alternating_ab_round_trip() {
         .expect("Encoding failed");
 
     let mut input_reader_decode = Cursor::new(encoded_output_buffer);
+    let header = Headers::from_reader(&mut input_reader_decode).expect("Decoding failed");
     let mut decompressed_output_buffer = Vec::new();
-    let _decode_info = decode(&mut input_reader_decode, None, &mut decompressed_output_buffer)
+    let _decode_info = decode(header, &mut input_reader_decode, None, &mut decompressed_output_buffer)
         .expect("Decoding failed");
 
     assert_eq!(decompressed_output_buffer, src);
@@ -68,8 +72,9 @@ fn full_ramp_round_trip() {
         .expect("Encoding failed");
 
     let mut input_reader_decode = Cursor::new(encoded_output_buffer);
+    let header = Headers::from_reader(&mut input_reader_decode).expect("Decoding failed");
     let mut decompressed_output_buffer = Vec::new();
-    let _decode_info = decode(&mut input_reader_decode, None, &mut decompressed_output_buffer)
+    let _decode_info = decode(header, &mut input_reader_decode, None, &mut decompressed_output_buffer)
         .expect("Decoding failed");
 
     assert_eq!(decompressed_output_buffer, src);
@@ -91,8 +96,9 @@ fn random_1k_round_trip() {
         .expect("Encoding failed");
 
     let mut input_reader_decode = Cursor::new(encoded_output_buffer);
+    let header = Headers::from_reader(&mut input_reader_decode).expect("Decoding failed");
     let mut decompressed_output_buffer = Vec::new();
-    let _decode_info = decode(&mut input_reader_decode, None, &mut decompressed_output_buffer)
+    let _decode_info = decode(header, &mut input_reader_decode, None, &mut decompressed_output_buffer)
         .expect("Decoding failed");
 
     assert_eq!(decompressed_output_buffer, src);

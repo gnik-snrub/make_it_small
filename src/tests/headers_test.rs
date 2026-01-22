@@ -3,7 +3,7 @@ use crate::headers::{write_header, Headers};
 
 #[test]
 fn headers_round_trip() {
-    let mut original = write_header(b"test".as_ref(), "testfile.txt");
+    let mut original = write_header(b"test".len() as u64, crate::checksum::adler32(b"test".as_ref()), "testfile.txt");
     original.tree = crate::huffman::tree::Node {
         weight: 0,
         symbol: Some(b'a'),

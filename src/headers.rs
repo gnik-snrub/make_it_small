@@ -18,19 +18,19 @@ pub struct Headers {
     pub tree: Node,
 }
 
-pub fn write_header(file: &[u8], name: &str) -> Headers {
+pub fn write_header(original_size: u64, checksum: u32, name: &str) -> Headers {
     Headers {
         magic_bytes: MAGIC_BYTES,
         version: VERSION,
         flags: 0b0000_0000, // TODO - Create a bitmask from selected flags using consts
-        original_size: file.len() as u64,
+        original_size,
         original_file_name: name.to_string(),
         compressed_size: 0,
         salt: [0u8; 16], // Initialized to zeros
         iv: [0u8; 12],   // Initialized to zeros
         tag: [0u8; 16],  // Initialized to zeros
         padding_bits: 0,
-        checksum: adler32(file),
+        checksum,
         tree: Node { weight: 0, symbol: None, left: None, right: None },
     }
 }

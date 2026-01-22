@@ -5,6 +5,7 @@ use crate::io::BitReader;
 use crate::crypto::{decrypt, derive_key};
 use std::io::{Read, Write, Cursor}; // Added for streaming traits and Cursor
 
+#[derive(Debug)]
 pub struct DecodeInfo {
     pub original_file_name: String,
     pub checksum: u32,
@@ -12,12 +13,11 @@ pub struct DecodeInfo {
 }
 
 pub fn decode<R: Read, W: Write>(
+    header: Headers, // Accept already parsed Headers
     reader: &mut R,
     decrypt_password: Option<&str>,
     writer: &mut W,
 ) -> Result<DecodeInfo, Box<dyn std::error::Error>> {
-    let header = Headers::from_reader(reader)?;
-
     if header.magic_bytes != MAGIC_BYTES {
         return Err("Error: Not a valid .small file".into());
     }
@@ -26,7 +26,7 @@ pub fn decode<R: Read, W: Write>(
         return Err("Error: Incorrect version".into());
     }
 
-    let mut payload_reader: Box<dyn Read> = Box::new(reader); // A dynamic reader for the payload
+    let mut payload_reader: Box<dyn Read> = Box::new(reader.take(header.compressed_size));
 
     // Handle decryption if encrypted flag is set
     if is_encrypted(header.flags) {
@@ -45,7 +45,8 @@ pub fn decode<R: Read, W: Write>(
 
     if is_stored_raw(header.flags) {
         // Read original data directly from the (potentially decrypted) payload reader
-        std::io::copy(&mut payload_reader, writer)?;
+        // Limit the read to original_size to prevent reading data of subsequent files in an archive
+        std::io::copy(&mut payload_reader.take(header.original_size), writer)?;
     } else {
         // Decompress Huffman data
         // Pass the payload_reader to BitReader

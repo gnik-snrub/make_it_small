@@ -1,6 +1,6 @@
 use std::io::Read;
-use std::fs;
-use std::io::{Write, Cursor, Seek};
+use std::io::{Write, Cursor, Seek, SeekFrom};
+use std::fs::{self, File};
 use std::path::{Path, PathBuf};
 
 use crate::huffman::{encoder::encode, decoder::decode};
@@ -8,15 +8,15 @@ use crate::headers::Headers;
 use crate::flags;
 
 /// Creates an archive from a directory.
-pub fn create_archive<W: Write>(
+pub fn create_archive<W: Write + Seek>(
     dir_path: &Path,
     encrypt_password: Option<&str>,
     writer: &mut W,
 ) -> std::io::Result<()> {
     let all_files = get_all_files(dir_path)?;
 
+    let mut all_encoded_files_bytes = Vec::new(); // Buffer to hold all embedded (header + data) blocks
     let mut total_original_size: u64 = 0;
-    let mut all_encoded_files_buf = Vec::new();
 
     for file_path in all_files {
         let relative_path = file_path.strip_prefix(dir_path).map_err(|_| {
@@ -26,35 +26,35 @@ pub fn create_archive<W: Write>(
             )
         })?;
 
-        let file_content = fs::read(&file_path)?;
-        total_original_size += file_content.len() as u64;
+        let mut current_file = File::open(&file_path)?; // Open file directly for streaming
+        let mut encoded_file_buffer = Vec::new(); // Temporary buffer for encode output
 
-        let mut file_content_cursor = Cursor::new(&file_content);
-        let mut encoded_file_bytes_buffer = Vec::new();
-
-        let _encode_info = encode(
-            &mut file_content_cursor,
+        let encode_info = encode(
+            &mut current_file,
             &relative_path.to_string_lossy(),
             encrypt_password,
-            &mut encoded_file_bytes_buffer,
+            &mut encoded_file_buffer, // Encode to temporary buffer
         ).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-
-        all_encoded_files_buf.extend_from_slice(&encoded_file_bytes_buffer);
+        
+        all_encoded_files_bytes.extend_from_slice(&encoded_file_buffer);
+        total_original_size += encode_info.original_size;
     }
 
+    // Now construct the master header with final, correct sizes
     let mut master_header = Headers::new();
     flags::flip_is_archive(&mut master_header.flags);
     if encrypt_password.is_some() {
         flags::flip_encrypted(&mut master_header.flags);
     }
+    
     master_header.original_size = total_original_size;
-    master_header.compressed_size = all_encoded_files_buf.len() as u64;
+    master_header.compressed_size = all_encoded_files_bytes.len() as u64; // Total size of all embedded blocks
     master_header.original_file_name = dir_path.file_name().unwrap_or_default().to_string_lossy().to_string();
 
-    let master_header_bytes = master_header.to_bytes();
-
-    writer.write_all(&master_header_bytes)?;
-    writer.write_all(&all_encoded_files_buf)?;
+    // Write the master header
+    writer.write_all(&master_header.to_bytes())?;
+    // Write all concatenated embedded files
+    writer.write_all(&all_encoded_files_bytes)?;
 
     Ok(())
 }
@@ -83,19 +83,13 @@ pub fn extract_archive<R: Read + Seek>(
         if reader.stream_position()? >= archive_body_end_position {
             break; // Reached the end of the archive body
         }
-        let embedded_header_start_pos = reader.seek(std::io::SeekFrom::Current(0))
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to seek reader: {}", e)))?;
-
         let embedded_header_result = Headers::from_reader(reader);
         let embedded_header = match embedded_header_result {
             Ok(h) => h,
             Err(e) => {
                 if let Some(io_err) = e.downcast_ref::<std::io::Error>() {
                     // Break if we hit EOF precisely at the end of the archive body.
-                    // If stream_position is exactly archive_body_end_position and we get EOF, it's fine.
-                    // If we get EOF before archive_body_end_position, it means a truncated archive.
                     if io_err.kind() == std::io::ErrorKind::UnexpectedEof {
-                        // Check if it's expected EOF at the boundary
                         if reader.stream_position()? == archive_body_end_position {
                             break; // Expected EOF at the end of the archive body
                         } else {
@@ -107,6 +101,9 @@ pub fn extract_archive<R: Read + Seek>(
             }
         };
 
+        // Get the current position of the main reader, which is now at the start of the payload
+        let payload_start_position = reader.stream_position()?;
+
         // Create output path
         let output_file_path = output_path.join(&embedded_header.original_file_name);
         if let Some(parent) = output_file_path.parent() {
@@ -114,16 +111,22 @@ pub fn extract_archive<R: Read + Seek>(
         }
         let mut output_file = fs::File::create(&output_file_path)?;
 
-        // Reconstruct the stream for decode: embedded_header + compressed_data
-        let mut full_file_bytes = embedded_header.clone().to_bytes();
-        let mut compressed_data_buf = vec![0u8; embedded_header.compressed_size as usize];
-        reader.read_exact(&mut compressed_data_buf)?;
-        full_file_bytes.extend_from_slice(&compressed_data_buf);
+        let embedded_header_compressed_size = embedded_header.compressed_size;
 
-        let mut full_file_reader = Cursor::new(full_file_bytes);
-        
-        let _decode_info = decode(&mut full_file_reader, decrypt_password, &mut output_file)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        // Create a limited reader for the decode function
+        let mut limited_reader = reader.take(embedded_header_compressed_size);
+
+        let _decode_info = decode(
+            embedded_header,
+            &mut limited_reader, // Pass the limited reader to decode
+            decrypt_password,
+            &mut output_file,
+        ).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+
+        // After decode, explicitly advance the main reader past the payload
+        // This is necessary because reader.take() only provides a limited view,
+        // it doesn't advance the underlying reader's position.
+        reader.seek(SeekFrom::Start(payload_start_position + embedded_header_compressed_size))?;
     }
 
     Ok(master_header)
@@ -274,16 +277,12 @@ pub fn extract_file<R: Read + Seek>(
                         }
                         let mut output_file = fs::File::create(output_path)?;
         
-                        // Reconstruct the stream for decode: embedded_header + compressed_data
-                        let mut full_file_bytes = embedded_header.clone().to_bytes();
-                        let mut compressed_data_buf = vec![0u8; embedded_header.compressed_size as usize];
-                        reader.read_exact(&mut compressed_data_buf)?;
-                        full_file_bytes.extend_from_slice(&compressed_data_buf);
-        
-                        let mut full_file_reader = Cursor::new(full_file_bytes);
-        
-                        let _decode_info = decode(&mut full_file_reader, decrypt_password, &mut output_file)
-                            .map_err(|e| std::io::Error::other(e.to_string()))?;
+                        let _decode_info = decode(
+                            embedded_header, // Pass the already parsed header
+                            reader,          // Pass the main reader, which is correctly positioned
+                            decrypt_password,
+                            &mut output_file,
+                        ).map_err(|e| std::io::Error::other(e.to_string()))?;
                         
                         return Ok(()); // File found and extracted
                     }
