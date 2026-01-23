@@ -2,8 +2,10 @@ use crate::flags::{is_stored_raw, is_encrypted};
 use crate::headers::Headers;
 use crate::constants::{MAGIC_BYTES, VERSION};
 use crate::io::BitReader;
-use crate::crypto::{decrypt, derive_key};
-use std::io::{Read, Write, Cursor}; // Added for streaming traits and Cursor
+use crate::crypto::decrypt_stream;
+use crate::crypto;
+use std::io::{Read, Write, Seek}; // Added Seek for tempfile ops
+use tempfile::tempfile; // Added for temporary file
 
 #[derive(Debug)]
 pub struct DecodeInfo {
@@ -12,11 +14,12 @@ pub struct DecodeInfo {
     pub original_size: u64,
 }
 
-pub fn decode<R: Read, W: Write>(
+pub fn decode<R: Read + Seek, W: Write>( // Added Seek bound to R
     header: Headers, // Accept already parsed Headers
     reader: &mut R,
     decrypt_password: Option<&str>,
     writer: &mut W,
+    chunk_size: usize, // New parameter
 ) -> Result<DecodeInfo, Box<dyn std::error::Error>> {
     if header.magic_bytes != MAGIC_BYTES {
         return Err("Error: Not a valid .small file".into());
@@ -26,20 +29,27 @@ pub fn decode<R: Read, W: Write>(
         return Err("Error: Incorrect version".into());
     }
 
-    let mut payload_reader: Box<dyn Read> = Box::new(reader.take(header.compressed_size));
+    let mut payload_reader: Box<dyn Read> = Box::new(reader.take(header.compressed_size)); // Added Seek to Box<dyn Read>
 
     // Handle decryption if encrypted flag is set
     if is_encrypted(header.flags) {
         let password = decrypt_password.ok_or("Error: File is encrypted, password required.")?;
-        
-        let mut encrypted_payload_bytes = vec![0u8; header.compressed_size as usize];
-        payload_reader.read_exact(&mut encrypted_payload_bytes)?;
+        let key = crypto::derive_key(password.as_bytes(), &header.salt);
 
-        let key = derive_key(password.as_bytes(), &header.salt);
-        let decrypted_payload = decrypt(&encrypted_payload_bytes, &key, &header.iv, &header.tag)?;
-        
-        // Replace the reader with a Cursor over the decrypted bytes
-        payload_reader = Box::new(Cursor::new(decrypted_payload));
+        // Decrypt stream to a temporary file
+        let mut decrypted_temp_file = tempfile()?; // Use tempfile directly
+        let decrypted_bytes_written = decrypt_stream(
+            &mut payload_reader, // Input is the encrypted payload stream
+            &mut decrypted_temp_file, // Output decrypted data to a temporary file
+            &key,
+            header.iv.as_ref(), // Use header.iv as initial_nonce_bytes
+            &[], // No AAD for now
+            chunk_size, // Pass chunk size
+        )?;
+        decrypted_temp_file.seek(std::io::SeekFrom::Start(0))?; // Rewind temp file
+
+        // Replace payload_reader with the decrypted stream from the temporary file
+        payload_reader = Box::new(decrypted_temp_file);
     }
 
 

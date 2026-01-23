@@ -1,4 +1,4 @@
-use crate::{constants::{MAGIC_BYTES, VERSION}, huffman::tree::{deserialize_tree, serialize_tree, Node}};
+use crate::{constants::{MAGIC_BYTES, VERSION}, huffman::tree::{deserialize_tree, serialize_tree, Node}, crypto};
 use std::io::Read;
 
 #[derive(Debug, Clone)]
@@ -10,7 +10,7 @@ pub struct Headers {
     pub original_file_name: String,
     pub compressed_size: u64,
     pub salt: [u8; 16],
-    pub iv: [u8; 12],
+    pub iv: [u8; {crate::crypto::FIXED_IV_PART_LEN}],
     pub tag: [u8; 16],
     pub padding_bits: u8,
     pub checksum: u32,
@@ -26,7 +26,7 @@ pub fn write_header(original_size: u64, checksum: u32, name: &str) -> Headers {
         original_file_name: name.to_string(),
         compressed_size: 0,
         salt: [0u8; 16], // Initialized to zeros
-        iv: [0u8; 12],   // Initialized to zeros
+        iv: [0u8; {crate::crypto::FIXED_IV_PART_LEN}],   // Initialized to zeros
         tag: [0u8; 16],  // Initialized to zeros
         padding_bits: 0,
         checksum,
@@ -56,7 +56,7 @@ impl Headers {
             original_file_name: String::new(),
             compressed_size: 0,
             salt: [0u8; 16],
-            iv: [0u8; 12],
+            iv: [0u8; {crate::crypto::FIXED_IV_PART_LEN}],
             tag: [0u8; 16],
             padding_bits: 0,
             checksum: 0,
@@ -107,7 +107,7 @@ impl Headers {
         let compressed_size = u64::from_le_bytes(Self::read_bytes::<R, 8>(reader)?);
 
         let salt = Self::read_bytes::<R, 16>(reader)?;
-        let iv = Self::read_bytes::<R, 12>(reader)?;
+        let iv = Self::read_bytes::<R, {crate::crypto::FIXED_IV_PART_LEN}>(reader)?;
         let tag = Self::read_bytes::<R, 16>(reader)?;
 
         let padding_bits = Self::read_bytes::<R, 1>(reader)?[0];

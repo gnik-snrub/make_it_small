@@ -12,6 +12,7 @@ pub fn create_archive<W: Write + Seek>(
     dir_path: &Path,
     encrypt_password: Option<&str>,
     writer: &mut W,
+    chunk_size: usize,
 ) -> std::io::Result<()> {
     let all_files = get_all_files(dir_path)?;
 
@@ -35,6 +36,7 @@ pub fn create_archive<W: Write + Seek>(
             &relative_path.to_string_lossy(),
             encrypt_password,
             &mut temp_body_file, // Encode directly to the temporary file
+            chunk_size, // Pass chunk_size
         ).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
         
         total_original_size += encode_info.original_size;
@@ -70,6 +72,7 @@ pub fn extract_archive<R: Read + Seek>(
     reader: &mut R,
     output_path: &Path,
     decrypt_password: Option<&str>,
+    chunk_size: usize,
 ) -> std::io::Result<()> { // Return type changed to Result<()> as master_header is passed in
 
     if !flags::is_archive(master_header.flags) {
@@ -125,6 +128,7 @@ pub fn extract_archive<R: Read + Seek>(
             &mut limited_reader, // Pass the limited reader to decode
             decrypt_password,
             &mut output_file,
+            chunk_size, // Pass chunk_size
         ).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 
         // After decode, explicitly advance the main reader past the payload
@@ -158,6 +162,7 @@ pub fn add_to_archive<R1: Read + Seek, R2: Read + Seek, W: Write + Seek>(
     existing_reader: &mut R1,
     new_reader: &mut R2,
     writer: &mut W,
+    chunk_size: usize,
 ) -> std::io::Result<()> {
     // 1. Read master header of existing archive
     let master_header_existing = Headers::from_reader(existing_reader)
@@ -250,6 +255,7 @@ pub fn extract_file<R: Read + Seek>(
     file_to_extract: &str,
     output_path: &Path,
     decrypt_password: Option<&str>,
+    chunk_size: usize,
 ) -> std::io::Result<()> {
     let master_header = Headers::from_reader(reader)
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse master header: {}", e)))?;
@@ -290,6 +296,7 @@ pub fn extract_file<R: Read + Seek>(
                             reader,          // Pass the main reader, which is correctly positioned
                             decrypt_password,
                             &mut output_file,
+                            chunk_size, // Pass chunk_size
                         ).map_err(|e| std::io::Error::other(e.to_string()))?;
                         
                         return Ok(()); // File found and extracted

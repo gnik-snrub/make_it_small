@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::io::{self, Write, BufReader, BufWriter};
 use std::fs::{self, File};
-use tempfile::tempfile;
+
 
 use clap::{Parser, Subcommand};
 
@@ -35,12 +35,17 @@ enum Command {
 
         #[clap(short, long)]
         password: Option<String>,
+
+        #[clap(long)]
+        chunk_size: Option<usize>,
     },
     Decompress {
         name_in: String,
         name_out: Option<String>,
         #[clap(short, long)]
         password: Option<String>,
+        #[clap(long)]
+        chunk_size: Option<usize>,
     },
     List {
         name_in: String,
@@ -49,13 +54,16 @@ enum Command {
         name_in: String,
         file_to_extract: String,
         name_out: Option<String>,
+        #[clap(long)]
+        chunk_size: Option<usize>,
     }
 }
 
 pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
     let tokens = Cli::parse();
     match tokens {
-        Cli { command: Some(Command::Compress { name_in, name_out, ratio, password }) } => {
+        Cli { command: Some(Command::Compress { name_in, name_out, ratio, password, chunk_size }) } => {
+            let actual_chunk_size = chunk_size.unwrap_or(crate::crypto::DEFAULT_CHUNK_SIZE);
             let input_path = Path::new(&name_in);
             let output_path_str = match name_out {
                 Some(name) => format!("{name}.small"),
@@ -83,7 +91,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                                 Box::new(e) as Box<dyn std::error::Error>
                             })?;
                             let mut temp_archive_writer = BufWriter::new(temp_archive_file);
-                            create_archive(input_path, password.as_deref(), &mut temp_archive_writer).map_err(|e| {
+                            create_archive(input_path, password.as_deref(), &mut temp_archive_writer, actual_chunk_size).map_err(|e| {
                                 eprintln!("Error creating temporary archive of new directory: {}", e);
                                 e // create_archive returns Box<dyn Error>, so 'e' is already boxed
                             })?;
@@ -104,7 +112,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                                 eprintln!("Error opening input file '{}' for add operation: {}", name_in, e);
                                 Box::new(e) as Box<dyn std::error::Error>
                             })?);
-                            encode(&mut input_file_to_add, input_path.file_name().unwrap().to_str().unwrap(), password.as_deref(), &mut temp_file_writer).map_err(|e| {
+                            encode(&mut input_file_to_add, input_path.file_name().unwrap().to_str().unwrap(), password.as_deref(), &mut temp_file_writer, actual_chunk_size).map_err(|e| {
                                 eprintln!("Error compressing file for add operation: {}", e);
                                 e // encode returns Box<dyn Error>, so 'e' is already boxed
                             })?;
@@ -130,7 +138,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                         let mut temp_output_writer = BufWriter::new(temp_output_file);
 
                         // 4. Call add_to_archive
-                        add_to_archive(&mut existing_archive_reader, new_content_reader.as_mut(), &mut temp_output_writer).map_err(|e| {
+                        add_to_archive(&mut existing_archive_reader, new_content_reader.as_mut(), &mut temp_output_writer, actual_chunk_size).map_err(|e| {
                             eprintln!("Error adding to archive: {}", e);
                             e // add_to_archive returns Box<dyn Error>, so 'e' is already boxed
                         })?;
@@ -162,7 +170,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                     eprintln!("Error creating archive file '{}': {}", output_path_str, e);
                     Box::new(e) as Box<dyn std::error::Error>
                 })?);
-                if let Err(e) = create_archive(input_path, password.as_deref(), &mut output_file) {
+                if let Err(e) = create_archive(input_path, password.as_deref(), &mut output_file, actual_chunk_size) {
                     eprintln!("Error creating archive: {}", e);
                     return Err(Box::new(e) as Box<dyn std::error::Error>); // create_archive returns Result<(), std::io::Error>
                 }
@@ -178,7 +186,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                     Box::new(e) as Box<dyn std::error::Error>
                 })?);
 
-                let encode_result = encode(&mut input_file, name, password.as_deref(), &mut output_file);
+                let encode_result = encode(&mut input_file, name, password.as_deref(), &mut output_file, actual_chunk_size);
 
                 let encode_info = match encode_result {
                     Ok(info) => info,
@@ -196,7 +204,8 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 // No need to call write_file explicitly, encode already wrote to output_file
             }
         },
-        Cli { command: Some(Command::Decompress { name_in, name_out, password}) } => {
+        Cli { command: Some(Command::Decompress { name_in, name_out, password, chunk_size}) } => {
+            let actual_chunk_size = chunk_size.unwrap_or(crate::crypto::DEFAULT_CHUNK_SIZE);
             let _input_path = Path::new(&name_in); // This is still here, but truly unused as name_in is used directly.
 
             let mut source_reader = BufReader::new(File::open(&name_in).map_err(|e| {
@@ -232,7 +241,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 };
                 let output_dir = Path::new(&output_dir_name);
 
-                if let Err(e) = extract_archive(header, &mut source_reader, output_dir, decrypt_password) {
+                if let Err(e) = extract_archive(header, &mut source_reader, output_dir, decrypt_password, actual_chunk_size) {
                     eprintln!("Error extracting archive: {}", e);
                     return Err(Box::new(e) as Box<dyn std::error::Error>); // extract_archive returns Result<(), std::io::Error>
                 }
@@ -249,7 +258,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                     Box::new(e) as Box<dyn std::error::Error>
                 })?);
                 
-                let _decode_info = decode(header, &mut source_reader, decrypt_password, &mut output_file).map_err(|e| {
+                let _decode_info = decode(header, &mut source_reader, decrypt_password, &mut output_file, actual_chunk_size).map_err(|e| {
                     eprintln!("Error decompressing file: {}", e);
                     e // decode returns Box<dyn Error>, so 'e' is already boxed
                 })?;
@@ -282,7 +291,8 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
         },
-        Cli { command: Some(Command::ExtractFile { name_in, file_to_extract, name_out }) } => {
+        Cli { command: Some(Command::ExtractFile { name_in, file_to_extract, name_out, chunk_size }) } => {
+            let actual_chunk_size = chunk_size.unwrap_or(crate::crypto::DEFAULT_CHUNK_SIZE);
             let mut input_file = BufReader::new(File::open(&name_in).map_err(|e| {
                 eprintln!("Error opening archive file '{}': {}", name_in, e);
                 Box::new(e) as Box<dyn std::error::Error>
@@ -293,7 +303,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 None => PathBuf::from(&file_to_extract), // Default to file_to_extract if no output name given
             };
             
-            if let Err(e) = archive::extract_file(&mut input_file, &file_to_extract, &output_path, None) {
+            if let Err(e) = archive::extract_file(&mut input_file, &file_to_extract, &output_path, None, actual_chunk_size) {
                 eprintln!("Error extracting file '{}' from archive '{}': {}", file_to_extract, name_in, e);
                 return Err(Box::new(e) as Box<dyn std::error::Error>); // archive::extract_file returns Result<(), std::io::Error>
             }
