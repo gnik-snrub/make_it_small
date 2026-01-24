@@ -3,6 +3,41 @@
 //! This module defines a comprehensive error hierarchy that provides detailed
 //! information about what went wrong during compression, decompression,
 //! or archive operations, including rich context and helpful suggestions.
+//!
+//! # Examples
+//!
+//! ```rust
+//! use mismall::error::{MismallError, Result};
+//!
+//! fn process_file() -> Result<()> {
+//!     // This will automatically convert std::io::Error to MismallError
+//!     std::fs::read_to_string("file.txt")?;
+//!     Ok(())
+//! }
+//!
+//! fn handle_error(error: MismallError) {
+//!     match error {
+//!         MismallError::Compression { error, .. } => {
+//!             eprintln!("Compression failed: {}", error);
+//!         }
+//!         MismallError::Decompression { error, .. } => {
+//!             eprintln!("Decompression failed: {}", error);
+//!         }
+//!         MismallError::Archive { error, .. } => {
+//!             eprintln!("Archive operation failed: {}", error);
+//!         }
+//!         MismallError::Io { error, .. } => {
+//!             eprintln!("I/O error: {}", error);
+//!         }
+//!         MismallError::InvalidInput { message, .. } => {
+//!             eprintln!("Invalid input: {}", message);
+//!         }
+//!         MismallError::Unsupported { operation, .. } => {
+//!             eprintln!("Unsupported operation: {}", operation);
+//!         }
+//!     }
+//! }
+//! ```
 
 pub mod context;
 
@@ -352,6 +387,78 @@ impl<T> EnhancedError<T> {
             original,
             context: None,
             suggestion: Some(suggestion),
+        }
+    }
+}
+
+// Conversion traits for common error types
+impl From<std::io::Error> for MismallError {
+    fn from(err: std::io::Error) -> Self {
+        MismallError::Io {
+            error: err,
+            context: None,
+            suggestion: None,
+        }
+    }
+}
+
+impl From<CompressionError> for MismallError {
+    fn from(err: CompressionError) -> Self {
+        MismallError::Compression {
+            error: err,
+            context: None,
+            suggestion: None,
+        }
+    }
+}
+
+impl From<DecompressionError> for MismallError {
+    fn from(err: DecompressionError) -> Self {
+        MismallError::Decompression {
+            error: err,
+            context: None,
+            suggestion: None,
+        }
+    }
+}
+
+#[cfg(feature = "archives")]
+impl From<ArchiveError> for MismallError {
+    fn from(err: ArchiveError) -> Self {
+        MismallError::Archive {
+            error: err,
+            context: None,
+            suggestion: None,
+        }
+    }
+}
+
+impl From<Box<dyn std::error::Error>> for MismallError {
+    fn from(err: Box<dyn std::error::Error>) -> Self {
+        MismallError::InvalidInput {
+            message: err.to_string(),
+            context: None,
+            suggestion: None,
+        }
+    }
+}
+
+impl From<&str> for MismallError {
+    fn from(err: &str) -> Self {
+        MismallError::InvalidInput {
+            message: err.to_string(),
+            context: None,
+            suggestion: None,
+        }
+    }
+}
+
+impl From<String> for MismallError {
+    fn from(err: String) -> Self {
+        MismallError::InvalidInput {
+            message: err,
+            context: None,
+            suggestion: None,
         }
     }
 }
