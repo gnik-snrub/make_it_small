@@ -127,14 +127,54 @@ impl CompressionBuilder {
     ///     .compress()?;
     ///
     /// println!("Used custom chunk size: 1MB");
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
+    pub fn with_chunk_size(mut self, chunk_size: usize) -> Self {
+        self.chunk_size = chunk_size;
+        self
+    }
+
+    /// Set output path for compressed file
     ///
-    /// println!("Compression complete: {:.1}% of original size",
-    ///          result.compression_ratio);
+    /// # Arguments
+    ///
+    /// * `output_path` - Path where compressed file will be saved
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use mismall::compress::CompressionBuilder;
+    ///
+    /// let builder = CompressionBuilder::new("document.txt")
+    ///     .with_output_path("compressed_output.small")
+    ///     .compress()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn with_output_path<P: Into<PathBuf>>(mut self, output_path: P) -> Self {
         self.output_path = Some(output_path.into());
+        self
+    }
+
+    /// Set progress callback for compression operations
+    ///
+    /// # Arguments
+    ///
+    /// * `callback` - Function to call with progress updates
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// use mismall::compress::CompressionBuilder;
+    ///
+    /// let builder = CompressionBuilder::new("large_file.txt")
+    ///     .with_progress_callback(|progress| {
+    ///         println!("Progress: {:.1}%", progress.percentage);
+    ///     })
+    ///     .compress()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn with_progress_callback(mut self, callback: ProgressCallback) -> Self {
+        self.progress_callback = Some(callback);
         self
     }
 

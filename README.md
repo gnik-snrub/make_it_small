@@ -1,7 +1,19 @@
-# mismall — a streaming Huffman compressor with encryption
+# mismall - Streaming Huffman Compression Library
 
-A sophisticated file compressor and decompressor built around canonical Huffman coding with streaming architecture.  
-Designed to handle arbitrarily large files with bounded memory usage and optional AES-256-GCM encryption.
+[![Crates.io](https://img.shields.io/crates/v/mismall)](https://crates.io/crates/mismall)
+[![Documentation](https://docs.rs/mismall/badge.svg)](https://docs.rs/mismall)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A sophisticated Rust library for file compression and decompression built around canonical Huffman coding with streaming architecture. Designed to handle arbitrarily large files with bounded memory usage and optional AES-256-GCM encryption.
+
+## 🚀 Library Quick Start
+
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+mismall = "2.0"
+```
 
 ## Highlights
 - **Streaming Architecture:** Bounded memory usage (16MB default) with chunked I/O for unlimited file size support
@@ -12,13 +24,108 @@ Designed to handle arbitrarily large files with bounded memory usage and optiona
 - **Configurable Chunk Sizes:** Users can adjust memory usage from 64KB to 1GB+ with `--chunk-size` flag
 - **Deterministic Output:** Lossless round-trip verified with SHA-256 during processing
 
-## Install
-```bash
-cargo build --release
-cp target/release/mismall ~/.local/bin/
+### Basic Library Usage
+
+```rust
+use mismall::{compress_stream, decompress_stream};
+use std::io::Cursor;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Create test data
+    let input_data = b"Hello, world! This is test data for compression.";
+    std::fs::write("test.txt", input_data)?;
+    
+    // Compress using stream API
+    let mut reader = Cursor::new(input_data);
+    let mut compressed = Vec::new();
+    let result = mismall::compress_stream(&mut reader, "test.txt", None, &mut compressed, 1024 * 1024)?;
+    
+    println!("Compressed {} -> {} bytes ({:.1}% ratio)", 
+             result.original_size, result.compressed_size, result.compression_ratio);
+    
+    // Save compressed data
+    std::fs::write("test.txt.small", compressed)?;
+    
+    // Decompress the file
+    let compressed_data = std::fs::read("test.txt.small")?;
+    let mut compressed_reader = Cursor::new(compressed_data);
+    let mut decompressed = Vec::new();
+    let result = mismall::decompress_stream(&mut compressed_reader, None, &mut decompressed, 1024 * 1024)?;
+    
+    println!("Decompressed {} bytes", result.original_size);
+    
+    Ok(())
+}
 ```
 
-## Usage
+## 📦 Feature Flags
+
+- `compression` (default): Compression and decompression functionality
+- `archives` (default): Multi-file archive operations  
+- `encryption` (default): AES-256-GCM encryption support
+- `cli`: Command-line interface (enables all other features)
+
+```toml
+[dependencies]
+mismall = { version = "2.0", default-features = false, features = ["compression", "encryption"] }
+```
+
+## 🎯 Core Library APIs
+
+### Simple API
+- [`compress_stream()`] - Compress data streams with custom settings
+- [`decompress_stream()`] - Decompress data streams with custom settings
+
+### Builder API  
+- [`CompressionBuilder`] - Advanced compression with options
+- [`DecompressionBuilder`] - Advanced decompression with options
+- [`ArchiveBuilder`] - Create multi-file archives
+- [`ArchiveExtractor`] - Extract from archives with options
+
+### Streaming API
+- [`stream_reader()`] - Read from compressed streams
+- [`stream_writer()`] - Write to compressed streams  
+- [`Compressor`] - Stateful streaming compression
+- [`Decompressor`] - Stateful streaming decompression
+
+## 🛠️ Library Examples
+
+The `examples/` directory contains comprehensive library examples:
+
+- `simple_compress.rs` - Basic compression and decompression
+- `advanced_compression.rs` - Compression with encryption and custom settings
+- `archive_operations.rs` - Multi-file archive creation and extraction
+- `streaming.rs` - Real-time streaming compression/decompression
+- `performance.rs` - Performance comparison and benchmarks
+
+Run examples with:
+
+```bash
+cargo run --example simple_compress
+cargo run --example advanced_compression
+cargo run --example archive_operations
+cargo run --example streaming
+cargo run --example performance
+```
+
+## 🔧 Error Handling
+
+All library functions return `Result<T, MismallError>` where `MismallError` provides detailed error information with context for troubleshooting.
+
+```rust
+match mismall::compress_stream(&mut reader, "test.txt", None, &mut output, 1024 * 1024) {
+    Ok(result) => println!("Success: {} bytes compressed", result.compressed_size),
+    Err(e) => eprintln!("Compression failed: {}", e),
+}
+```
+
+---
+
+## CLI Tool Usage
+
+The mismall library also includes a command-line interface. Install and use as follows:
+
+## Install
 
 ### Single File Operations
 - **Compress (with optional encryption and ratio display):**
