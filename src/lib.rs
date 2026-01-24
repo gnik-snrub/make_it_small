@@ -4,6 +4,56 @@
 //! canonical Huffman coding with streaming architecture. Designed to handle arbitrarily
 //! large files with bounded memory usage and optional AES-256-GCM encryption.
 //!
+//! ## 🚀 Quick Start
+//!
+//! ### Basic Usage
+//! ```rust
+//! use mismall::{compress_file, decompress_file};
+//!
+//! // Compress a file
+//! let result = compress_file("document.txt", None)?;
+//! println!("Compressed {} -> {} bytes", result.original_size, result.compressed_size);
+//!
+//! // Decompress a file  
+//! let result = decompress_file("document.txt.small", None)?;
+//! println!("Decompressed {} bytes", result.original_size);
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ### Advanced Usage
+//! ```rust
+//! use mismall::compress::CompressionBuilder;
+//!
+//! let result = CompressionBuilder::new("large_video.mp4")
+//!     .with_password("secret123")
+//!     .with_chunk_size(64 * 1024 * 1024) // 64MB chunks
+//!     .with_progress_callback(|progress| {
+//!         println!("Progress: {}%", progress.percentage);
+//!     })
+//!     .compress()?;
+//!
+//! println!("Compressed with {:.1}% ratio", result.compression_ratio);
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! ### Archive Operations
+//! ```rust
+//! use mismall::archive::{ArchiveBuilder, ArchiveExtractor};
+//!
+//! // Create archive
+//! ArchiveBuilder::new()
+//!     .add_file("doc1.pdf", b"PDF content")?
+//!     .add_file("image.jpg", b"JPG content")?
+//!     .with_password("archive_secret")
+//!     .build("backup.small")?;
+//!
+//! // Extract from archive
+//! ArchiveExtractor::new("backup.small")
+//!     .with_password("archive_secret")
+//!     .extract_all()?;
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
 //! ## Features
 //!
 //! - **Streaming Architecture**: Bounded memory usage (16MB default) with chunked I/O
@@ -87,11 +137,72 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 //!
-//! ## Memory Usage Guidelines
+//! ## 🎯 Core APIs
 //!
-//! - **Low memory systems (1GB RAM)**: `chunk_size = 65536` (64KB)
-//! - **Standard systems (8GB+ RAM)**: Default 16MB (16,777,216 bytes)
-//! - **High-memory systems (32GB+ RAM)**: `chunk_size = 1073741824` (1GB)
+//! ### Simple API
+//! - [`compress_file()`] - Compress a file with default settings
+//! - [`decompress_file()`] - Decompress a file with default settings
+//! - [`validate_chunk_size()`] - Validate memory usage parameters
+//!
+//! ### Builder API  
+//! - [`CompressionBuilder`] - Advanced compression with options
+//! - [`DecompressionBuilder`] - Advanced decompression with options
+//! - [`ArchiveBuilder`] - Create multi-file archives
+//! - [`ArchiveExtractor`] - Extract from archives with options
+//!
+//! ### Streaming API
+//! - [`stream_reader()`] - Read from compressed streams
+//! - [`stream_writer()`] - Write to compressed streams  
+//! - [`Compressor`] - Stateful streaming compression
+//! - [`Decompressor`] - Stateful streaming decompression
+//!
+//! ## 📚 Module Organization
+//!
+//! ### [`compress`]
+//! High-level compression functions and builder pattern for advanced options.
+//!
+//! ### [`decompress`]
+//! High-level decompression functions and builder pattern for advanced options.
+//!
+//! ### [`archive`]
+//! Multi-file archive operations including creation, extraction, and listing.
+//!
+//! ### [`stream`]
+//! Low-level streaming utilities for custom I/O patterns.
+//!
+//! ### [`error`]
+//! Comprehensive error hierarchy with context and suggestions.
+//!
+//! ### [`progress`]
+//! Progress tracking utilities with callback support.
+//!
+//! ## 💾 Memory Management
+//!
+//! mismall is designed for **bounded memory usage** regardless of file size:
+//!
+//! | System Type | Recommended Chunk Size | Memory Usage |
+//! |-------------|---------------------|--------------|
+//! | Low (1GB) | 64KB | Minimal |
+//! | Standard (8GB+) | 16MB (default) | Balanced |
+//! | High (32GB+) | 1GB | Maximum |
+//!
+//! **Why this matters**: The streaming architecture processes files in chunks,
+//! never loading entire files into memory. This enables compression of
+//! multi-gigabyte files on resource-constrained systems.
+//!
+//! ## 🔒 Security Features
+//!
+//! - **AES-256-GCM** encryption with authenticated data integrity
+//! - **Password-based key derivation** using PBKDF2 with random salt
+//! - **Authentication tags** prevent tampering and verify data integrity
+//! - **Optional encryption** -.compress without passwords for speed
+//!
+//! ## ⚡ Performance Characteristics
+//!
+//! - **Compression**: Huffman coding optimized for text and binary data
+//! - **Raw-store heuristic**: Automatically skips compression for incompressible data
+//! - **Chunked I/O**: Overlaps computation with I/O for better throughput
+//! - **Zero-copy operations**: Minimizes memory allocations where possible
 //!
 //! ## Feature Flags
 //!
