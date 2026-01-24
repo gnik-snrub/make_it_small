@@ -1,7 +1,5 @@
 - [x] Refactor core logic to use file streaming (no in-memory dumping of full files).
 - [x] Implement chunked, multi-tag encryption/decryption.
 - [x] Ensure project compiles without errors.
-- [ ] Address remaining compiler warnings:
-    - [ ] `warning: unused variable: decrypted_bytes_written` in `src/huffman/decoder.rs`.
-    - [ ] `warning: unused variable: chunk_size` in `src/archive.rs`.
 - [ ] Rebuild and update all test suites.
+- [ ] Address remaining compiler warnings:

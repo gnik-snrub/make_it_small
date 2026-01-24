@@ -1,11 +1,11 @@
-use std::io::{Read, Write, Seek, SeekFrom};
 use std::fs::{self, File};
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use tempfile;
 
-use crate::huffman::{encoder::encode, decoder::decode};
-use crate::headers::Headers;
 use crate::flags;
+use crate::headers::Headers;
+use crate::huffman::{decoder::decode, encoder::encode};
 
 /// Creates an archive from a directory.
 pub fn create_archive<W: Write + Seek>(
@@ -17,7 +17,7 @@ pub fn create_archive<W: Write + Seek>(
     let all_files = get_all_files(dir_path)?;
 
     let mut total_original_size: u64 = 0;
-    
+
     // Create a temporary file to store the archive body
     let mut temp_body_file = tempfile::tempfile()?;
 
@@ -36,9 +36,10 @@ pub fn create_archive<W: Write + Seek>(
             &relative_path.to_string_lossy(),
             encrypt_password,
             &mut temp_body_file, // Encode directly to the temporary file
-            chunk_size, // Pass chunk_size
-        ).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
-        
+            chunk_size,          // Pass chunk_size
+        )
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+
         total_original_size += encode_info.original_size;
     }
 
@@ -53,10 +54,14 @@ pub fn create_archive<W: Write + Seek>(
     if encrypt_password.is_some() {
         flags::flip_encrypted(&mut master_header.flags);
     }
-    
+
     master_header.original_size = total_original_size;
     master_header.compressed_size = master_compressed_size;
-    master_header.original_file_name = dir_path.file_name().unwrap_or_default().to_string_lossy().to_string();
+    master_header.original_file_name = dir_path
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
 
     // Write the master header to the main writer
     writer.write_all(&master_header.to_bytes())?;
@@ -73,7 +78,8 @@ pub fn extract_archive<R: Read + Seek>(
     output_path: &Path,
     decrypt_password: Option<&str>,
     chunk_size: usize,
-) -> std::io::Result<()> { // Return type changed to Result<()> as master_header is passed in
+) -> std::io::Result<()> {
+    // Return type changed to Result<()> as master_header is passed in
 
     if !flags::is_archive(master_header.flags) {
         return Err(std::io::Error::new(
@@ -104,7 +110,10 @@ pub fn extract_archive<R: Read + Seek>(
                         }
                     }
                 }
-                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse embedded header: {}", e)));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("Failed to parse embedded header: {}", e),
+                ));
             }
         };
 
@@ -129,12 +138,15 @@ pub fn extract_archive<R: Read + Seek>(
             decrypt_password,
             &mut output_file,
             chunk_size, // Pass chunk_size
-        ).map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        )
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
 
         // After decode, explicitly advance the main reader past the payload
         // This is necessary because reader.take() only provides a limited view,
         // it doesn't advance the underlying reader's position.
-        reader.seek(SeekFrom::Start(payload_start_position + embedded_header_compressed_size))?;
+        reader.seek(SeekFrom::Start(
+            payload_start_position + embedded_header_compressed_size,
+        ))?;
     }
 
     Ok(())
@@ -165,13 +177,21 @@ pub fn add_to_archive<R1: Read + Seek, R2: Read + Seek, W: Write + Seek>(
     chunk_size: usize,
 ) -> std::io::Result<()> {
     // 1. Read master header of existing archive
-    let master_header_existing = Headers::from_reader(existing_reader)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse header of existing file: {}", e)))?;
+    let master_header_existing = Headers::from_reader(existing_reader).map_err(|e| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("Failed to parse header of existing file: {}", e),
+        )
+    })?;
     let _master_header_existing_len = existing_reader.stream_position()?;
 
     // 2. Read header of new content
-    let new_content_header = Headers::from_reader(new_reader)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse header of new content: {}", e)))?;
+    let new_content_header = Headers::from_reader(new_reader).map_err(|e| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("Failed to parse header of new content: {}", e),
+        )
+    })?;
     let _new_content_header_len = new_reader.stream_position()?;
 
     // 3. Create a temporary file to build the new archive body
@@ -180,7 +200,10 @@ pub fn add_to_archive<R1: Read + Seek, R2: Read + Seek, W: Write + Seek>(
     // 4. Copy existing archive body (all embedded files) to temporary file
     // We only copy up to master_header_existing.compressed_size
     // This is the entire body, which is all embedded headers + payloads.
-    std::io::copy(&mut existing_reader.take(master_header_existing.compressed_size), &mut temp_new_body_file)?;
+    std::io::copy(
+        &mut existing_reader.take(master_header_existing.compressed_size),
+        &mut temp_new_body_file,
+    )?;
 
     // 5. Append new content (header + payload) to temporary file
     // The new_reader is already positioned after new_content_header
@@ -197,11 +220,14 @@ pub fn add_to_archive<R1: Read + Seek, R2: Read + Seek, W: Write + Seek>(
     let mut new_master_header = Headers::new();
     flags::flip_is_archive(&mut new_master_header.flags);
 
-    if flags::is_encrypted(master_header_existing.flags) || flags::is_encrypted(new_content_header.flags) {
+    if flags::is_encrypted(master_header_existing.flags)
+        || flags::is_encrypted(new_content_header.flags)
+    {
         flags::flip_encrypted(&mut new_master_header.flags);
     }
-    
-    new_master_header.original_size = master_header_existing.original_size + new_content_header.original_size;
+
+    new_master_header.original_size =
+        master_header_existing.original_size + new_content_header.original_size;
     new_master_header.compressed_size = new_body_compressed_size;
     new_master_header.original_file_name = master_header_existing.original_file_name; // Keep the original archive name
 
@@ -216,13 +242,22 @@ pub fn add_to_archive<R1: Read + Seek, R2: Read + Seek, W: Write + Seek>(
 pub fn list_contents<R: Read + Seek>(reader: &mut R) -> std::io::Result<Vec<String>> {
     let mut file_names = Vec::new();
 
-    let master_header = Headers::from_reader(reader)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse master header: {}", e)))?;
+    let master_header = Headers::from_reader(reader).map_err(|e| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("Failed to parse master header: {}", e),
+        )
+    })?;
 
     if flags::is_archive(master_header.flags) {
         loop {
-            let _embedded_header_start_pos = reader.seek(std::io::SeekFrom::Current(0))
-                .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to seek reader: {}", e)))?;
+            let _embedded_header_start_pos =
+                reader.seek(std::io::SeekFrom::Current(0)).map_err(|e| {
+                    std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        format!("Failed to seek reader: {}", e),
+                    )
+                })?;
 
             let embedded_header_result = Headers::from_reader(reader);
             let embedded_header = match embedded_header_result {
@@ -233,13 +268,18 @@ pub fn list_contents<R: Read + Seek>(reader: &mut R) -> std::io::Result<Vec<Stri
                             break; // End of archive body
                         }
                     }
-                    return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse embedded header: {}", e)));
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::InvalidData,
+                        format!("Failed to parse embedded header: {}", e),
+                    ));
                 }
             };
-            
+
             file_names.push(embedded_header.original_file_name);
 
-            reader.seek(std::io::SeekFrom::Current(embedded_header.compressed_size as i64))?;
+            reader.seek(std::io::SeekFrom::Current(
+                embedded_header.compressed_size as i64,
+            ))?;
         }
     } else {
         // It's a single file, just list its name
@@ -257,8 +297,12 @@ pub fn extract_file<R: Read + Seek>(
     decrypt_password: Option<&str>,
     chunk_size: usize,
 ) -> std::io::Result<()> {
-    let master_header = Headers::from_reader(reader)
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse master header: {}", e)))?;
+    let master_header = Headers::from_reader(reader).map_err(|e| {
+        std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("Failed to parse master header: {}", e),
+        )
+    })?;
 
     if !flags::is_archive(master_header.flags) {
         return Err(std::io::Error::new(
@@ -268,7 +312,13 @@ pub fn extract_file<R: Read + Seek>(
     }
 
     loop {
-                    let _embedded_header_start_pos = reader.seek(std::io::SeekFrom::Current(0))            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to seek reader: {}", e)))?;
+        let _embedded_header_start_pos =
+            reader.seek(std::io::SeekFrom::Current(0)).map_err(|e| {
+                std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to seek reader: {}", e),
+                )
+            })?;
 
         let embedded_header_result = Headers::from_reader(reader);
         let embedded_header = match embedded_header_result {
@@ -280,29 +330,35 @@ pub fn extract_file<R: Read + Seek>(
                         break; // End of archive body
                     }
                 }
-                return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Failed to parse embedded header: {}", e)));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("Failed to parse embedded header: {}", e),
+                ));
             }
         };
 
         // If the file matches, extract it
-                    if embedded_header.original_file_name == file_to_extract {
-                        if let Some(parent) = output_path.parent() {
-                            fs::create_dir_all(parent)?;
-                        }
-                        let mut output_file = fs::File::create(output_path)?;
-        
-                        let _decode_info = decode(
-                            embedded_header, // Pass the already parsed header
-                            reader,          // Pass the main reader, which is correctly positioned
-                            decrypt_password,
-                            &mut output_file,
-                            chunk_size, // Pass chunk_size
-                        ).map_err(|e| std::io::Error::other(e.to_string()))?;
-                        
-                        return Ok(()); // File found and extracted
-                    }
+        if embedded_header.original_file_name == file_to_extract {
+            if let Some(parent) = output_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            let mut output_file = fs::File::create(output_path)?;
+
+            let _decode_info = decode(
+                embedded_header, // Pass the already parsed header
+                reader,          // Pass the main reader, which is correctly positioned
+                decrypt_password,
+                &mut output_file,
+                chunk_size, // Pass chunk_size
+            )
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+
+            return Ok(()); // File found and extracted
+        }
         // If not the target file, skip its compressed payload
-        reader.seek(std::io::SeekFrom::Current(embedded_header.compressed_size as i64))?;
+        reader.seek(std::io::SeekFrom::Current(
+            embedded_header.compressed_size as i64,
+        ))?;
     }
 
     Err(std::io::Error::new(
