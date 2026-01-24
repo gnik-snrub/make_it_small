@@ -123,81 +123,30 @@ impl CompressionBuilder {
     /// use mismall::compress::CompressionBuilder;
     ///
     /// let builder = CompressionBuilder::new("large_file.bin")
-    ///     .with_chunk_size(64 * 1024 * 1024); // 64MB
+    ///     .with_chunk_size(1024 * 1024) // 1MB chunks
+    ///     .compress()?;
+    ///
+    /// println!("Used custom chunk size: 1MB");
     /// ```
-    pub fn with_chunk_size(mut self, chunk_size: usize) -> Self {
-        self.chunk_size = chunk_size;
-        self
-    }
-
-    /// Set progress callback for real-time updates
     ///
-    /// The callback will be called periodically with progress information
-    /// during the compression process.
-    ///
-    /// # Arguments
-    ///
-    /// * `callback` - Function that receives `ProgressInfo`
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use mismall::compress::CompressionBuilder;
-    ///
-    /// let builder = CompressionBuilder::new("big_file.bin")
-    ///     .with_progress_callback(|progress| {
-    ///         println!("{}% complete - {} of {} bytes processed",
-    ///                  progress.percentage,
-    ///                  progress.bytes_processed,
-    ///                  progress.total_bytes);
-    ///     });
-    /// ```
-    pub fn with_progress_callback<F>(mut self, callback: F) -> Self
-    where
-        F: FnMut(&crate::progress::ProgressInfo) + Send + Sync + 'static,
-    {
-        self.progress_callback = Some(Box::new(callback));
-        self
-    }
-
-    /// Set custom output file path
-    ///
-    /// By default, the compressed file will be saved with a `.small` extension
-    /// in the same directory as the input file.
-    ///
-    /// # Arguments
-    ///
-    /// * `output_path` - Path where the compressed file should be saved
-    ///
-    /// # Example
-    ///
-    /// ```rust
-    /// use mismall::compress::CompressionBuilder;
-    ///
-    /// let builder = CompressionBuilder::new("document.txt")
-    ///     .with_output_path("compressed/document.small");
+    /// println!("Compression complete: {:.1}% of original size",
+    ///          result.compression_ratio);
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn with_output_path<P: Into<PathBuf>>(mut self, output_path: P) -> Self {
         self.output_path = Some(output_path.into());
         self
     }
 
-    /// Execute the compression operation
+    /// Perform the compression with all configured options
     ///
-    /// Performs the compression with all configured options and returns
-    /// a `CompressionResult` with statistics about the operation.
+    /// # Arguments
+    ///
+    /// * `self` - The builder instance with all configured options
     ///
     /// # Returns
     ///
-    /// Returns `Ok(CompressionResult)` on success or `Err(MismallError)` on failure.
-    ///
-    /// # Errors
-    ///
-    /// - `CompressionError::InvalidChunkSize` if chunk size is out of range
-    /// - `CompressionError::InputRead` if input file cannot be read
-    /// - `CompressionError::OutputWrite` if output cannot be written
-    /// - `CompressionError::Encryption` if encryption fails
-    /// - `Io` for other I/O related errors
+    /// Returns `CompressionResult` containing compression statistics
     ///
     /// # Example
     ///
@@ -206,10 +155,13 @@ impl CompressionBuilder {
     ///
     /// let result = CompressionBuilder::new("document.txt")
     ///     .with_password("secret")
+    ///     .with_chunk_size(1024 * 1024) // 1MB chunks
+    ///     .with_progress_callback(|progress| {
+    ///         println!("{}% complete", progress.percentage);
+    ///     })
     ///     .compress()?;
     ///
-    /// println!("Compression complete: {:.1}% of original size",
-    ///          result.compression_ratio);
+    /// println!("Compressed with {:.1}% ratio", result.compression_ratio);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn compress(self) -> Result<CompressionResult> {
