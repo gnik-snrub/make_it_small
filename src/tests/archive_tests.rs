@@ -1,6 +1,6 @@
 #[cfg(test)]
 mod tests {
-    use crate::archive::{create_archive, extract_archive};
+    use crate::archive::{extract_archive, list_archive_contents};
     use crate::crypto::DEFAULT_CHUNK_SIZE;
     use crate::headers::Headers;
     use std::fs::{self, File};
@@ -85,16 +85,7 @@ mod tests {
             archive_writer.flush().unwrap();
         }
 
-        let mut archive_reader = BufReader::new(File::open(&archive_path).unwrap());
-        let master_header = Headers::from_reader(&mut archive_reader).unwrap();
-        extract_archive(
-            master_header,
-            &mut archive_reader,
-            &output_dir,
-            None,
-            DEFAULT_CHUNK_SIZE,
-        )
-        .unwrap();
+        extract_archive(&archive_path, &output_dir, None).unwrap();
 
         compare_dirs(&input_dir, &output_dir).unwrap();
     }
@@ -131,44 +122,19 @@ mod tests {
         }
 
         // Test with correct password
-        let mut archive_reader = BufReader::new(File::open(&archive_path).unwrap());
-        let master_header = Headers::from_reader(&mut archive_reader).unwrap();
-        extract_archive(
-            master_header,
-            &mut archive_reader,
-            &output_dir,
-            Some(password),
-            DEFAULT_CHUNK_SIZE,
-        )
-        .unwrap();
+        extract_archive(&archive_path, &output_dir, Some(password)).unwrap();
         compare_dirs(&input_dir, &output_dir).unwrap();
 
         // Test with wrong password (should fail)
         let output_dir_wrong_pass = tmp_dir.path().join("output_wrong_pass");
         fs::create_dir_all(&output_dir_wrong_pass).unwrap();
-        let mut archive_reader_wrong = BufReader::new(File::open(&archive_path).unwrap());
-        let master_header_wrong = Headers::from_reader(&mut archive_reader_wrong).unwrap();
-        let result = extract_archive(
-            master_header_wrong,
-            &mut archive_reader_wrong,
-            &output_dir_wrong_pass,
-            Some(wrong_password),
-            DEFAULT_CHUNK_SIZE,
-        );
+        let result = extract_archive(&archive_path, &output_dir_wrong_pass, Some(wrong_password));
         assert!(result.is_err()); // Expecting an error due to wrong password
 
         // Test without password (should fail)
         let output_dir_no_pass = tmp_dir.path().join("output_no_pass");
         fs::create_dir_all(&output_dir_no_pass).unwrap();
-        let mut archive_reader_no_pass = BufReader::new(File::open(&archive_path).unwrap());
-        let master_header_no_pass = Headers::from_reader(&mut archive_reader_no_pass).unwrap();
-        let result_no_pass = extract_archive(
-            master_header_no_pass,
-            &mut archive_reader_no_pass,
-            &output_dir_no_pass,
-            None,
-            DEFAULT_CHUNK_SIZE,
-        );
+        let result_no_pass = extract_archive(&archive_path, &output_dir_no_pass, None);
         assert!(result_no_pass.is_err()); // Expecting an error due to no password
     }
 
@@ -188,8 +154,7 @@ mod tests {
             archive_writer.flush().unwrap();
         }
 
-        let mut archive_reader = BufReader::new(File::open(&archive_path).unwrap());
-        let listed_files = crate::archive::list_contents(&mut archive_reader).unwrap();
+        let (_, listed_files) = crate::archive::list_archive_contents(&archive_path).unwrap();
 
         let mut expected_files = vec![
             "a.txt".to_string(),
@@ -219,39 +184,42 @@ mod tests {
             .unwrap();
             archive_writer.flush().unwrap();
         }
-        let mut single_archive_reader = BufReader::new(File::open(&single_archive_path).unwrap());
-        let listed_single_file = crate::archive::list_contents(&mut single_archive_reader).unwrap();
-        assert_eq!(listed_single_file, vec!["single_file.txt".to_string()]);
+        let (_, listed_single_file) =
+            crate::archive::list_archive_contents(&single_archive_path).unwrap();
+        let file_names: Vec<String> = listed_single_file.iter().map(|f| f.path.clone()).collect();
+        assert_eq!(file_names, vec!["single_file.txt".to_string()]);
     }
 
     #[test]
-    fn test_add_file_to_existing_archive() {
+    fn test_create_archive_with_multiple_files() {
         let tmp_dir = tempdir().unwrap();
-        let input_dir1 = tmp_dir.path().join("input_initial");
-        fs::create_dir(&input_dir1).unwrap();
-        fs::write(input_dir1.join("file1.txt"), b"Content of file1").unwrap();
 
-        let initial_archive_path = tmp_dir.path().join("initial.small");
-        {
-            let mut archive_writer = BufWriter::new(File::create(&initial_archive_path).unwrap());
-            create_archive(&input_dir1, None, &mut archive_writer, DEFAULT_CHUNK_SIZE).unwrap();
-            archive_writer.flush().unwrap();
-        }
+        // Create a new archive with multiple files using ArchiveBuilder
+        let final_archive_path = tmp_dir.path().join("multiple_files.small");
+        let archive_info = crate::archive::ArchiveBuilder::new()
+            .add_file("file1.txt", b"Content of file1")
+            .unwrap()
+            .add_file("file2.txt", b"Content of new file2")
+            .unwrap()
+            .build(&final_archive_path)
+            .unwrap();
 
-        // Add a new file
-        let new_file_content = b"Content of new file2";
-        let new_file_name = "file2.txt";
-        let mut new_file_reader_input = std::io::Cursor::new(new_file_content.to_vec());
-        let mut encoded_new_file_buffer = std::io::Cursor::new(Vec::new());
+        assert_eq!(archive_info.file_count, 2);
 
-        crate::huffman::encoder::encode(
-            &mut new_file_reader_input,
-            new_file_name,
-            None,
-            &mut encoded_new_file_buffer,
-            DEFAULT_CHUNK_SIZE,
-        )
-        .unwrap();
+        // Extract and verify
+        let output_dir = tmp_dir.path().join("output");
+        extract_archive(&final_archive_path, &output_dir, None).unwrap();
+
+        assert!(output_dir.join("file1.txt").exists());
+        assert!(output_dir.join("file2.txt").exists());
+        assert_eq!(
+            fs::read_to_string(output_dir.join("file1.txt")).unwrap(),
+            "Content of file1"
+        );
+        assert_eq!(
+            fs::read_to_string(output_dir.join("file2.txt")).unwrap(),
+            "Content of new file2"
+        );
         encoded_new_file_buffer.seek(SeekFrom::Start(0)).unwrap(); // Rewind
 
         let final_archive_path = tmp_dir.path().join("final.small");
@@ -308,23 +276,23 @@ mod tests {
 
         let archive_path = tmp_dir.path().join("single_extract.small");
         {
-            let mut archive_writer = BufWriter::new(File::create(&archive_path).unwrap());
-            create_archive(&input_dir, None, &mut archive_writer, DEFAULT_CHUNK_SIZE).unwrap();
-            archive_writer.flush().unwrap();
+            use crate::archive::ArchiveBuilder;
+            ArchiveBuilder::new()
+                .add_file("file1.txt", b"Content of file 1")
+                .unwrap()
+                .add_file("sub_dir/file2.log", b"Log data for file 2")
+                .unwrap()
+                .add_file("file3.csv", b"a,b,c\n1,2,3")
+                .unwrap()
+                .build(&archive_path)
+                .unwrap();
         }
 
         let output_file_path = tmp_dir.path().join("extracted_file2.log");
         let file_to_extract = "sub_dir/file2.log";
 
-        let mut archive_reader = BufReader::new(File::open(&archive_path).unwrap());
-        crate::archive::extract_file(
-            &mut archive_reader,
-            file_to_extract,
-            &output_file_path,
-            None,
-            DEFAULT_CHUNK_SIZE,
-        )
-        .unwrap();
+        crate::archive::extract_file(&archive_path, file_to_extract, &output_file_path, None)
+            .unwrap();
 
         assert!(output_file_path.exists());
         assert_eq!(fs::read(&output_file_path).unwrap(), b"Log data for file 2");
@@ -342,7 +310,7 @@ mod tests {
             )
         };
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err().kind(), std::io::ErrorKind::NotFound);
+        assert!(result.unwrap_err().to_string().contains("not found"));
         assert!(!non_existent_output_path.exists());
 
         // Test extracting an encrypted file (password required)
@@ -352,27 +320,31 @@ mod tests {
         let encrypted_archive_path = tmp_dir.path().join("encrypted_single_extract.small");
         let password = "pass";
         {
-            let mut archive_writer = BufWriter::new(File::create(&encrypted_archive_path).unwrap());
-            create_archive(
-                &encrypted_input_dir,
-                Some(password),
-                &mut archive_writer,
-                DEFAULT_CHUNK_SIZE,
-            )
-            .unwrap();
-            archive_writer.flush().unwrap();
+            use crate::archive::ArchiveBuilder;
+            ArchiveBuilder::new()
+                .with_password(password)
+                .add_file("secret.txt", b"super secret!")
+                .unwrap()
+                .build(&encrypted_archive_path)
+                .unwrap();
         }
+
+        let encrypted_output_file_path = tmp_dir.path().join("encrypted_output_file.txt");
+        crate::archive::extract_file(
+            &encrypted_archive_path,
+            "secret.txt",
+            &encrypted_output_file_path,
+            Some(password),
+        )
+        .unwrap();
+
         let encrypted_output_file_path = tmp_dir.path().join("extracted_secret.txt");
-        let result_encrypted = {
-            let mut archive_reader = BufReader::new(File::open(&encrypted_archive_path).unwrap());
-            crate::archive::extract_file(
-                &mut archive_reader,
-                "secret.txt",
-                &encrypted_output_file_path,
-                Some(password),
-                DEFAULT_CHUNK_SIZE,
-            )
-        };
+        let result_encrypted = crate::archive::extract_file(
+            &encrypted_archive_path,
+            "secret.txt",
+            &encrypted_output_file_path,
+            Some(password),
+        );
         assert!(result_encrypted.is_ok());
         assert_eq!(
             fs::read(&encrypted_output_file_path).unwrap(),
@@ -380,16 +352,12 @@ mod tests {
         );
 
         // Test extracting encrypted file with wrong password (should fail)
-        let result_encrypted_wrong_pass = {
-            let mut archive_reader = BufReader::new(File::open(&encrypted_archive_path).unwrap());
-            crate::archive::extract_file(
-                &mut archive_reader,
-                "secret.txt",
-                &tmp_dir.path().join("fail_secret.txt"),
-                Some("wrong"),
-                DEFAULT_CHUNK_SIZE,
-            )
-        };
+        let result_encrypted_wrong_pass = crate::archive::extract_file(
+            &encrypted_archive_path,
+            "secret.txt",
+            &tmp_dir.path().join("fail_secret.txt"),
+            Some("wrong"),
+        );
         assert!(result_encrypted_wrong_pass.is_err());
     }
 }

@@ -44,12 +44,12 @@ pub fn decompress_file<P: AsRef<Path>>(
     password: Option<&str>,
 ) -> Result<DecompressionResult> {
     let input_path = input_path.as_ref();
-    let mut input_file = File::open(input_path).map_err(|e| {
-        crate::error::MismallError::Decompression(DecompressionError::InputRead(format!(
-            "Failed to open input file: {}",
-            e
-        )))
-    })?;
+    let mut input_file =
+        File::open(input_path).map_err(|e| crate::error::MismallError::Decompression {
+            error: DecompressionError::InputRead(format!("Failed to open input file: {}", e)),
+            context: None,
+            suggestion: None,
+        })?;
 
     let mut output_buffer = Cursor::new(Vec::new());
 
@@ -81,11 +81,10 @@ pub fn decompress_file_with_progress<P: AsRef<Path>>(
 
     // Get file size for progress tracking
     let file_size = std::fs::metadata(input_path)
-        .map_err(|e| {
-            crate::error::MismallError::Decompression(DecompressionError::InputRead(format!(
-                "Failed to read file metadata: {}",
-                e
-            )))
+        .map_err(|e| crate::error::MismallError::Decompression {
+            error: DecompressionError::InputRead(format!("Failed to read file metadata: {}", e)),
+            context: None,
+            suggestion: None,
         })?
         .len();
 
@@ -95,12 +94,12 @@ pub fn decompress_file_with_progress<P: AsRef<Path>>(
         progress_callback,
     );
 
-    let mut input_file = File::open(input_path).map_err(|e| {
-        crate::error::MismallError::Decompression(DecompressionError::InputRead(format!(
-            "Failed to open input file: {}",
-            e
-        )))
-    })?;
+    let mut input_file =
+        File::open(input_path).map_err(|e| crate::error::MismallError::Decompression {
+            error: DecompressionError::InputRead(format!("Failed to open input file: {}", e)),
+            context: None,
+            suggestion: None,
+        })?;
 
     let mut output_buffer = Cursor::new(Vec::new());
 
@@ -159,19 +158,20 @@ pub fn decompress_stream<R: Read + std::io::Seek, W: Write>(
     crate::compress::validate_chunk_size(chunk_size)?;
 
     // Read headers first
-    let header = Headers::from_reader(reader).map_err(|e| {
-        crate::error::MismallError::Decompression(DecompressionError::InvalidFormat(format!(
-            "Failed to read headers: {}",
-            e
-        )))
-    })?;
+    let header =
+        Headers::from_reader(reader).map_err(|e| crate::error::MismallError::Decompression {
+            error: DecompressionError::InvalidFormat(format!("Failed to read headers: {}", e)),
+            context: None,
+            suggestion: None,
+        })?;
 
     // Use the decoder directly to handle streaming
     decode(header, reader, password, writer, chunk_size).map_err(|e| {
-        crate::error::MismallError::Decompression(DecompressionError::CorruptedData(format!(
-            "Failed to decode: {}",
-            e
-        )))
+        crate::error::MismallError::Decompression {
+            error: DecompressionError::CorruptedData(format!("Failed to decode: {}", e)),
+            context: None,
+            suggestion: None,
+        }
     })
 }
 
@@ -190,8 +190,7 @@ mod tests {
         temp_file.flush().unwrap();
 
         // First compress it
-        let compressed_result =
-            crate::compress::simple::compress_file(temp_file.path(), None).unwrap();
+        let compressed_result = crate::compress_file(temp_file.path(), None).unwrap();
 
         // Now decompress it (this is a simplified test)
         // In reality, we'd need actual compressed data

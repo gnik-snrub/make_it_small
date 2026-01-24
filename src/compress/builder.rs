@@ -255,6 +255,7 @@ impl From<PathBuf> for CompressionBuilder {
 mod tests {
     use super::*;
     use std::fs;
+    use std::io::Write;
     use tempfile::NamedTempFile;
 
     #[test]
@@ -332,7 +333,10 @@ mod tests {
         assert!(result.is_err());
 
         match result.unwrap_err() {
-            crate::error::MismallError::Compression(CompressionError::InvalidChunkSize(size)) => {
+            crate::error::MismallError::Compression {
+                error: crate::error::CompressionError::InvalidChunkSize(size),
+                ..
+            } => {
                 assert_eq!(size, 32 * 1024);
             }
             _ => panic!("Expected InvalidChunkSize error"),

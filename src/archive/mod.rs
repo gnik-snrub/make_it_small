@@ -65,7 +65,7 @@ impl FileInfo {
 /// Information about an archive
 #[derive(Debug, Clone)]
 pub struct ArchiveInfo {
-    /// Total number of files in the archive
+    /// Total number of files in archive
     pub file_count: usize,
     /// Total original size of all files
     pub total_original_size: u64,
@@ -77,8 +77,154 @@ pub struct ArchiveInfo {
     pub overall_bytes_saved: i64,
     /// Overall size savings as percentage
     pub overall_savings_percentage: f32,
-    /// Whether any files in the archive are encrypted
+    /// Whether any files in archive are encrypted
     pub has_encrypted_files: bool,
+}
+
+/// Check if a file appears to be an archive based on its headers
+///
+/// # Arguments
+///
+/// * `headers` - The file headers to check
+///
+/// # Returns
+///
+/// Returns `true` if the file appears to be an archive
+///
+/// # Examples
+///
+/// ```rust
+/// use mismall::archive::is_archive;
+/// use mismall::headers::Headers;
+///
+/// let headers = Headers::from_reader(&mut file)?;
+/// if is_archive(&headers) {
+///     println!("This is an archive file");
+/// }
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+pub fn is_archive(headers: &crate::headers::Headers) -> bool {
+    use crate::flags;
+    flags::is_archive(headers.flags)
+}
+
+/// Check if a file is encrypted based on its headers
+///
+/// # Arguments
+///
+/// * `headers` - The file headers to check
+///
+/// # Returns
+///
+/// Returns `true` if the file is encrypted
+///
+/// # Examples
+///
+/// ```rust
+/// use mismall::archive::is_encrypted;
+/// use mismall::headers::Headers;
+///
+/// let headers = Headers::from_reader(&mut file)?;
+/// if is_encrypted(&headers) {
+///     println!("This file is encrypted");
+/// }
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+pub fn is_encrypted(headers: &crate::headers::Headers) -> bool {
+    use crate::flags;
+    flags::is_encrypted(headers.flags)
+}
+
+/// Validate archive file path and basic properties
+///
+/// # Arguments
+///
+/// * `archive_path` - Path to the archive file
+///
+/// # Returns
+///
+/// Returns `Ok(())` if the archive file appears valid
+///
+/// # Errors
+///
+/// Returns error if the file doesn't exist or can't be read
+///
+/// # Examples
+///
+/// ```rust
+/// use mismall::archive::validate_archive_path;
+///
+/// validate_archive_path("backup.small")?;
+/// println!("Archive file is valid");
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+pub fn validate_archive_path<P: AsRef<std::path::Path>>(
+    archive_path: P,
+) -> crate::error::Result<()> {
+    let path = archive_path.as_ref();
+
+    // Check if file exists
+    if !path.exists() {
+        return Err(crate::error::MismallError::InvalidInput {
+            message: format!("Archive file does not exist: {}", path.display()),
+            context: None,
+            suggestion: None,
+        });
+    }
+
+    // Check if it's a file (not directory)
+    if !path.is_file() {
+        return Err(crate::error::MismallError::InvalidInput {
+            message: format!("Path is not a file: {}", path.display()),
+            context: None,
+            suggestion: None,
+        });
+    }
+
+    // Check file extension
+    if let Some(extension) = path.extension() {
+        if extension != "small" {
+            return Err(crate::error::MismallError::InvalidInput {
+                message: format!(
+                    "Invalid archive extension: {:?}. Expected '.small'",
+                    extension
+                ),
+                context: None,
+                suggestion: Some(crate::error::context::Suggestion::new(
+                    "Use .small extension",
+                    "Archive files must have a .small extension",
+                )),
+            });
+        }
+    }
+
+    Ok(())
+}
+
+/// Calculate compression statistics for a set of files
+///
+/// # Arguments
+///
+/// * `files` - List of file information
+///
+/// # Returns
+///
+/// Returns calculated `ArchiveInfo` with statistics
+///
+/// # Examples
+///
+/// ```rust
+/// use mismall::archive::{FileInfo, calculate_archive_stats};
+///
+/// let files = vec![
+///     FileInfo::new("file1.txt", 1000, 750, false),
+///     FileInfo::new("file2.txt", 2000, 1600, true),
+/// ];
+/// let stats = calculate_archive_stats(&files);
+/// println!("Archive: {} files, {}% compression", stats.file_count, stats.overall_savings_percentage());
+/// ```
+pub fn calculate_archive_stats(files: &[FileInfo]) -> ArchiveInfo {
+    ArchiveInfo::from_files(files)
 }
 
 impl ArchiveInfo {
@@ -154,7 +300,7 @@ mod tests {
         assert_eq!(info.total_compressed_size, 1500);
         assert_eq!(info.overall_compression_ratio, 75.0);
         assert_eq!(info.overall_bytes_saved, -500);
-        assert_eq!(info.overall_savings_percentage(), 25.0);
+        assert_eq!(info.overall_savings_percentage, 25.0);
         assert!(info.has_encrypted_files);
     }
 

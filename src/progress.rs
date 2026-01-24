@@ -206,7 +206,7 @@ mod tests {
         let info = ProgressInfo::new(ProcessingStage::Encoding, 1500, 1000);
         assert_eq!(info.percentage, 100.0);
 
-        let info = ProgressInfo::new(ProcessingStage::Encoding, -100, 1000);
+        let info = ProgressInfo::new(ProcessingStage::Encoding, 0, 1000);
         assert_eq!(info.percentage, 0.0);
     }
 

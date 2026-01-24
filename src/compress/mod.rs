@@ -78,9 +78,11 @@ pub fn validate_chunk_size(chunk_size: usize) -> Result<()> {
     const MAX_CHUNK_SIZE: usize = 1024 * 1024 * 1024; // 1GB
 
     if chunk_size < MIN_CHUNK_SIZE || chunk_size > MAX_CHUNK_SIZE {
-        Err(crate::error::MismallError::Compression(
-            CompressionError::InvalidChunkSize(chunk_size),
-        ))
+        Err(crate::error::MismallError::Compression {
+            error: CompressionError::InvalidChunkSize(chunk_size),
+            context: None,
+            suggestion: None,
+        })
     } else {
         Ok(())
     }

@@ -45,15 +45,19 @@ pub fn compress_file<P: AsRef<Path>>(
     let filename = input_path
         .file_name()
         .and_then(|n| n.to_str())
-        .ok_or_else(|| crate::error::MismallError::InvalidInput("Invalid filename".to_string()))?
+        .ok_or_else(|| crate::error::MismallError::InvalidInput {
+            message: "Invalid filename".to_string(),
+            context: None,
+            suggestion: None,
+        })?
         .to_string();
 
-    let mut input_file = File::open(input_path).map_err(|e| {
-        crate::error::MismallError::Compression(CompressionError::InputRead(format!(
-            "Failed to open input file: {}",
-            e
-        )))
-    })?;
+    let mut input_file =
+        File::open(input_path).map_err(|e| crate::error::MismallError::Compression {
+            error: CompressionError::InputRead(format!("Failed to open input file: {}", e)),
+            context: None,
+            suggestion: None,
+        })?;
 
     let mut output_buffer = Cursor::new(Vec::new());
 
@@ -64,8 +68,10 @@ pub fn compress_file<P: AsRef<Path>>(
         &mut output_buffer,
         DEFAULT_CHUNK_SIZE,
     )
-    .map_err(|e| {
-        crate::error::MismallError::Compression(CompressionError::Encryption(e.to_string()))
+    .map_err(|e| crate::error::MismallError::Compression {
+        error: CompressionError::Encryption(e.to_string()),
+        context: None,
+        suggestion: None,
     })?;
 
     Ok(CompressionResult::new(
@@ -113,7 +119,11 @@ pub fn compress_stream<R: Read + std::io::Seek, W: Write>(
     crate::compress::validate_chunk_size(chunk_size)?;
 
     let encode_info = encode(reader, filename, password, writer, chunk_size).map_err(|e| {
-        crate::error::MismallError::Compression(CompressionError::Encryption(e.to_string()))
+        crate::error::MismallError::Compression {
+            error: CompressionError::Encryption(e.to_string()),
+            context: None,
+            suggestion: None,
+        }
     })?;
 
     Ok(CompressionResult::new(
@@ -136,16 +146,19 @@ pub(crate) fn compress_file_with_progress<P: AsRef<Path>>(
     let _filename = input_path
         .file_name()
         .and_then(|n| n.to_str())
-        .ok_or_else(|| crate::error::MismallError::InvalidInput("Invalid filename".to_string()))?
+        .ok_or_else(|| crate::error::MismallError::InvalidInput {
+            message: "Invalid filename".to_string(),
+            context: None,
+            suggestion: None,
+        })?
         .to_string();
 
     // Get file size for progress tracking
     let file_size = std::fs::metadata(input_path)
-        .map_err(|e| {
-            crate::error::MismallError::Compression(CompressionError::InputRead(format!(
-                "Failed to read file metadata: {}",
-                e
-            )))
+        .map_err(|e| crate::error::MismallError::Compression {
+            error: CompressionError::InputRead(format!("Failed to read file metadata: {}", e)),
+            context: None,
+            suggestion: None,
         })?
         .len();
 
@@ -168,6 +181,7 @@ pub(crate) fn compress_file_with_progress<P: AsRef<Path>>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::huffman::encoder::EncodeInfo;
     use std::io::Write;
     use tempfile::NamedTempFile;
 

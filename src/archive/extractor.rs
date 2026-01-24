@@ -167,7 +167,7 @@ impl ArchiveExtractor {
 
         crate::archive::simple::extract_archive(
             &self.archive_path,
-            output_dir,
+            &output_dir,
             self.password.as_deref(),
         )
     }
@@ -181,16 +181,16 @@ impl ArchiveExtractor {
     ///
     /// # Returns
     ///
-    /// Returns `Ok(())` on success or `Err(MismallError)` on failure.
+    /// Returns `Ok(())` on success, error on failure
     ///
-    /// # Example
+    /// # Examples
     ///
     /// ```rust
     /// use mismall::archive::ArchiveExtractor;
     ///
-    /// ArchiveExtractor::new("backup.small")
+    /// let extractor = ArchiveExtractor::new("backup.small")
+    ///     .with_password("secret123")
     ///     .extract_file("documents/contract.pdf", "restored_contract.pdf")?;
-    ///
     /// println!("File extracted successfully");
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -205,7 +205,7 @@ impl ArchiveExtractor {
         crate::archive::simple::extract_file(
             &self.archive_path,
             file_path,
-            output_path,
+            output_path.as_ref(),
             self.password.as_deref(),
         )
     }

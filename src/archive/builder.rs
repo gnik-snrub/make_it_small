@@ -1,6 +1,6 @@
 use crate::archive::ArchiveInfo;
 use crate::crypto::DEFAULT_CHUNK_SIZE;
-use crate::error::{ArchiveError, Result};
+use crate::error::{ArchiveError, MismallError, Result};
 use crate::progress::ProgressCallback;
 
 /// Builder pattern for archive operations with advanced options
@@ -34,6 +34,14 @@ pub struct ArchiveBuilder {
 }
 
 impl ArchiveBuilder {
+    /// Helper function to create archive errors
+    fn archive_error(error: ArchiveError) -> MismallError {
+        MismallError::Archive {
+            error,
+            context: None,
+            suggestion: None,
+        }
+    }
     /// Create a new archive builder
     ///
     /// # Example
@@ -73,27 +81,27 @@ impl ArchiveBuilder {
 
         // Validate inputs
         if path.is_empty() {
-            return Err(crate::error::MismallError::Archive(ArchiveError::Creation(
+            return Err(Self::archive_error(ArchiveError::Creation(
                 "File path cannot be empty".to_string(),
             )));
         }
 
         if path.len() > 255 {
-            return Err(crate::error::MismallError::Archive(ArchiveError::Creation(
+            return Err(Self::archive_error(ArchiveError::Creation(
                 "File path too long (max 255 characters)".to_string(),
             )));
         }
 
         if self.files.len() >= 1000 {
-            return Err(crate::error::MismallError::Archive(
-                ArchiveError::TooManyFiles(self.files.len() + 1),
-            ));
+            return Err(Self::archive_error(ArchiveError::TooManyFiles(
+                self.files.len() + 1,
+            )));
         }
 
         let total_size: u64 = self.files.iter().map(|(_, data)| data.len() as u64).sum();
         if total_size + data.len() as u64 > 1024 * 1024 * 1024 * 10 {
             // 10GB limit
-            return Err(crate::error::MismallError::Archive(ArchiveError::TooLarge(
+            return Err(Self::archive_error(ArchiveError::TooLarge(
                 total_size + data.len() as u64,
             )));
         }
@@ -127,8 +135,8 @@ impl ArchiveBuilder {
 
         // Read file content
         let data = std::fs::read(fs_path).map_err(|e| {
-            crate::error::MismallError::Archive(ArchiveError::Creation(format!(
-                "Failed to read file '{}': {}",
+            Self::archive_error(ArchiveError::Creation(format!(
+                "Failed to read file {}: {}",
                 fs_path.display(),
                 e
             )))
@@ -227,7 +235,7 @@ impl ArchiveBuilder {
     pub fn build<P: AsRef<std::path::Path>>(self, output_path: P) -> Result<ArchiveInfo> {
         // Validate inputs
         if self.files.is_empty() {
-            return Err(crate::error::MismallError::Archive(ArchiveError::Creation(
+            return Err(Self::archive_error(ArchiveError::Creation(
                 "Cannot create archive with no files".to_string(),
             )));
         }
