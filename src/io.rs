@@ -7,11 +7,14 @@ pub struct BitWriter<W: Write> {
     pub padding_bits: usize,
 }
 
-
-
 impl<W: Write> BitWriter<W> {
     pub fn new(writer: W) -> BitWriter<W> {
-        BitWriter { buffer: 0, len: 0, writer, padding_bits: 0 }
+        BitWriter {
+            buffer: 0,
+            len: 0,
+            writer,
+            padding_bits: 0,
+        }
     }
 
     pub fn write_bits(&mut self, value: u32, bit_count: u8) -> std::io::Result<()> {
@@ -48,7 +51,7 @@ impl<W: Write> BitWriter<W> {
     pub fn finalize(&mut self) -> std::io::Result<()> {
         if self.len == 0 {
             self.padding_bits = 0;
-            return Ok(())
+            return Ok(());
         }
 
         for _ in 0..(8 - self.len) {
@@ -62,8 +65,6 @@ impl<W: Write> BitWriter<W> {
         self.len = 0;
         Ok(())
     }
-
-
 }
 
 pub struct BitReader<R: Read> {
@@ -116,4 +117,3 @@ impl<R: Read> BitReader<R> {
         Ok(Some(bit))
     }
 }
-

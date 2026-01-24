@@ -1,5 +1,8 @@
 #[cfg(test)]
-use crate::huffman::{freq::compute_frequencies, tree::{build_huffman_tree, Node}};
+use crate::huffman::{
+    freq::compute_frequencies,
+    tree::{build_huffman_tree, Node},
+};
 use std::io::Cursor;
 
 #[test]

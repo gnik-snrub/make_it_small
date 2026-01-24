@@ -2,7 +2,6 @@ use crate::huffman::freq::compute_frequencies;
 use std::io::Cursor;
 
 #[cfg(test)]
-
 #[test]
 fn freq_empty_slice() {
     let buf: &[u8] = b"";

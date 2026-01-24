@@ -1,10 +1,11 @@
+use aes_gcm::aead::rand_core::RngCore; // Added RngCore
 use aes_gcm::{
-    aead::{KeyInit, OsRng, AeadInPlace, Nonce, Tag}, // Added Nonce and GenericArray
-    Aes256Gcm, Key 
+    aead::{AeadInPlace, KeyInit, Nonce, OsRng, Tag}, // Added Nonce and GenericArray
+    Aes256Gcm,
+    Key,
 };
 use pbkdf2::pbkdf2_hmac;
 use sha2::Sha256;
-use aes_gcm::aead::rand_core::RngCore; // Added RngCore
 use std::io::{Read, Write};
 
 // Key, Salt, IV, Tag lengths for AES-256 GCM
@@ -25,12 +26,12 @@ pub fn encrypt_stream<R: Read, W: Write>(
     writer: &mut W,
     key: &Key<Aes256Gcm>,
     initial_nonce: &[u8; IV_LEN], // Full 12-byte initial nonce from header
-    aad: &[u8], // Additional authenticated data
+    aad: &[u8],                   // Additional authenticated data
     chunk_size: usize,
 ) -> Result<usize, Box<dyn std::error::Error>> {
     let cipher = Aes256Gcm::new(key);
     let mut total_bytes_written = 0;
-    
+
     // Buffer for plaintext. Encrypted data is written back into this buffer.
     let mut plaintext_buffer = vec![0u8; chunk_size];
 
@@ -55,13 +56,19 @@ pub fn encrypt_stream<R: Read, W: Write>(
         let nonce = Nonce::<Aes256Gcm>::from_slice(&full_nonce_bytes);
 
         // Encrypt in place. `plaintext_buffer` will contain ciphertext.
-        let tag = cipher.encrypt_in_place_detached(
-            nonce,
-            aad, // Associated data for this chunk
-            &mut plaintext_buffer[..bytes_read], // Buffer contains plaintext and will be overwritten with ciphertext
-        )
-        .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::Other, e.to_string())) as Box<dyn std::error::Error>)?;
-        
+        let tag = cipher
+            .encrypt_in_place_detached(
+                nonce,
+                aad,                                 // Associated data for this chunk
+                &mut plaintext_buffer[..bytes_read], // Buffer contains plaintext and will be overwritten with ciphertext
+            )
+            .map_err(|e| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    e.to_string(),
+                )) as Box<dyn std::error::Error>
+            })?;
+
         writer.write_all(&plaintext_buffer[..bytes_read])?; // Write ciphertext
         writer.write_all(tag.as_ref())?; // Write tag
         total_bytes_written += bytes_read + TAG_LEN;
@@ -77,7 +84,7 @@ pub fn decrypt_stream<R: Read, W: Write>(
     writer: &mut W,
     key: &Key<Aes256Gcm>,
     initial_nonce: &[u8; IV_LEN], // Full 12-byte initial nonce from header
-    aad: &[u8], // Additional authenticated data
+    aad: &[u8],                   // Additional authenticated data
     chunk_size: usize,
 ) -> Result<usize, Box<dyn std::error::Error>> {
     let cipher = Aes256Gcm::new(key);
@@ -106,13 +113,15 @@ pub fn decrypt_stream<R: Read, W: Write>(
         }
 
         let current_ciphertext_len = bytes_read_combined - TAG_LEN;
-        
+
         // Extract ciphertext and tag parts
         let mut tag_buffer = [0u8; TAG_LEN];
-        tag_buffer.copy_from_slice(&ciphertext_read_buffer[current_ciphertext_len..bytes_read_combined]);
-        
+        tag_buffer
+            .copy_from_slice(&ciphertext_read_buffer[current_ciphertext_len..bytes_read_combined]);
+
         // Copy ciphertext part to the plaintext_buffer (which will be modified in-place)
-        plaintext_buffer[..current_ciphertext_len].copy_from_slice(&ciphertext_read_buffer[..current_ciphertext_len]);
+        plaintext_buffer[..current_ciphertext_len]
+            .copy_from_slice(&ciphertext_read_buffer[..current_ciphertext_len]);
 
         // Reconstruct the nonce for this chunk
         let mut full_nonce_bytes = [0u8; IV_LEN];
@@ -122,13 +131,19 @@ pub fn decrypt_stream<R: Read, W: Write>(
         let nonce = Nonce::<Aes256Gcm>::from_slice(&full_nonce_bytes);
 
         // Decrypt in place. `plaintext_buffer` contains ciphertext and will be overwritten with plaintext.
-        cipher.decrypt_in_place_detached(
-            nonce,
-            aad, // Associated data for this chunk
-            &mut plaintext_buffer[..current_ciphertext_len], // Buffer contains ciphertext
-            &Tag::<Aes256Gcm>::from_slice(&tag_buffer), // Tag
-        )
-        .map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, format!("Decryption error: {}", e.to_string()))) as Box<dyn std::error::Error>)?;
+        cipher
+            .decrypt_in_place_detached(
+                nonce,
+                aad,                                             // Associated data for this chunk
+                &mut plaintext_buffer[..current_ciphertext_len], // Buffer contains ciphertext
+                &Tag::<Aes256Gcm>::from_slice(&tag_buffer),      // Tag
+            )
+            .map_err(|e| {
+                Box::new(std::io::Error::new(
+                    std::io::ErrorKind::InvalidData,
+                    format!("Decryption error: {}", e.to_string()),
+                )) as Box<dyn std::error::Error>
+            })?;
 
         writer.write_all(&plaintext_buffer[..current_ciphertext_len])?; // Write only the plaintext part
         total_bytes_written += current_ciphertext_len;

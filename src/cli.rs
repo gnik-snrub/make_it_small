@@ -5,11 +5,11 @@ use std::path::{Path, PathBuf};
 use clap::{Parser, Subcommand};
 
 use crate::huffman::{decoder::decode, encoder::encode};
-// Removed read_file and write_file imports
 
 use crate::archive::{self, add_to_archive, create_archive, extract_archive};
 use crate::flags;
-use crate::headers::Headers; // Import Headers struct // Import flags module
+use crate::headers::Headers;
+use crate::progress::{OperationType, ProgressConfig, ProgressTracker};
 
 #[derive(Parser, Debug)]
 #[command(name = "Make It Small")]

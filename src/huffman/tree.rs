@@ -47,8 +47,7 @@ impl PartialEq for Node {
     }
 }
 
-impl Eq for Node {
-}
+impl Eq for Node {}
 
 impl Ord for Node {
     fn cmp(&self, other: &Node) -> Ordering {
@@ -65,7 +64,7 @@ impl PartialOrd for Node {
 pub fn serialize_tree(node: &Node, out: &mut Vec<u8>) {
     if node.symbol.is_none() && (node.left.is_none() || node.right.is_none()) {
         // Do nothing, so early return
-        return
+        return;
     }
 
     if let Some(symbol) = node.symbol {
@@ -83,7 +82,7 @@ pub fn serialize_tree(node: &Node, out: &mut Vec<u8>) {
             _ => {
                 eprintln!("Corrupted node: {:?}", node);
                 panic!("Internal node missing a child - invalid Huffman tree")
-            },
+            }
         }
     }
 }
@@ -95,7 +94,7 @@ pub fn deserialize_tree<I: Iterator<Item = u8> + ExactSizeIterator>(stream: &mut
             symbol: None,
             left: None,
             right: None,
-        }
+        };
     }
     match stream.next() {
         Some(1) => {

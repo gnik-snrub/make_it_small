@@ -1,13 +1,14 @@
 #[cfg(test)]
 mod tests {
-    use crate::huffman::{encoder::encode, decoder::decode};
-    use crate::headers::Headers;
     use crate::crypto::DEFAULT_CHUNK_SIZE;
+    use crate::headers::Headers;
+    use crate::huffman::{decoder::decode, encoder::encode};
     use std::io::{Cursor, Seek, SeekFrom};
 
     #[test]
     fn test_basic_unencrypted_roundtrip() {
-        let original_content = b"Hello, this is a test string for roundtrip compression and decompression.";
+        let original_content =
+            b"Hello, this is a test string for roundtrip compression and decompression.";
         let mut input_reader = Cursor::new(original_content.to_vec());
         let mut encoded_output_buffer = Cursor::new(Vec::new());
 
@@ -22,11 +23,14 @@ mod tests {
         .expect("Encoding failed");
 
         // Rewind encoded buffer to read from the beginning
-        encoded_output_buffer.seek(SeekFrom::Start(0)).expect("Failed to rewind encoded buffer");
+        encoded_output_buffer
+            .seek(SeekFrom::Start(0))
+            .expect("Failed to rewind encoded buffer");
 
         // 2. Read header first
-        let header = Headers::from_reader(&mut encoded_output_buffer).expect("Failed to read header");
-        
+        let header =
+            Headers::from_reader(&mut encoded_output_buffer).expect("Failed to read header");
+
         let mut decoded_output_buffer = Cursor::new(Vec::new());
 
         // 3. Decode
@@ -44,12 +48,16 @@ mod tests {
         assert_eq!(decode_info.original_size, original_content.len() as u64);
 
         // Verify content
-        assert_eq!(decoded_output_buffer.into_inner(), original_content.to_vec());
+        assert_eq!(
+            decoded_output_buffer.into_inner(),
+            original_content.to_vec()
+        );
     }
 
     #[test]
     fn test_basic_encrypted_roundtrip() {
-        let original_content = b"This is some secret data that should be encrypted and then decrypted successfully.";
+        let original_content =
+            b"This is some secret data that should be encrypted and then decrypted successfully.";
         let password = "supersecretpassword";
         let mut input_reader = Cursor::new(original_content.to_vec());
         let mut encoded_output_buffer = Cursor::new(Vec::new());
@@ -65,11 +73,14 @@ mod tests {
         .expect("Encoding failed");
 
         // Rewind encoded buffer to read from the beginning
-        encoded_output_buffer.seek(SeekFrom::Start(0)).expect("Failed to rewind encoded buffer");
+        encoded_output_buffer
+            .seek(SeekFrom::Start(0))
+            .expect("Failed to rewind encoded buffer");
 
         // 2. Read header first
-        let header = Headers::from_reader(&mut encoded_output_buffer).expect("Failed to read header");
-        
+        let header =
+            Headers::from_reader(&mut encoded_output_buffer).expect("Failed to read header");
+
         let mut decoded_output_buffer = Cursor::new(Vec::new());
 
         // 3. Decode with decryption
@@ -87,7 +98,10 @@ mod tests {
         assert_eq!(decode_info.original_size, original_content.len() as u64);
 
         // Verify content
-        assert_eq!(decoded_output_buffer.into_inner(), original_content.to_vec());
+        assert_eq!(
+            decoded_output_buffer.into_inner(),
+            original_content.to_vec()
+        );
     }
 
     #[test]
@@ -108,11 +122,14 @@ mod tests {
         .expect("Encoding failed for large data");
 
         // Rewind encoded buffer to read from the beginning
-        encoded_output_buffer.seek(SeekFrom::Start(0)).expect("Failed to rewind encoded buffer");
+        encoded_output_buffer
+            .seek(SeekFrom::Start(0))
+            .expect("Failed to rewind encoded buffer");
 
         // 2. Read header first
-        let header = Headers::from_reader(&mut encoded_output_buffer).expect("Failed to read header for large data");
-        
+        let header = Headers::from_reader(&mut encoded_output_buffer)
+            .expect("Failed to read header for large data");
+
         let mut decoded_output_buffer = Cursor::new(Vec::new());
 
         // 3. Decode with decryption
@@ -151,11 +168,14 @@ mod tests {
         .expect("Encoding failed for empty file");
 
         // Rewind encoded buffer to read from the beginning
-        encoded_output_buffer.seek(SeekFrom::Start(0)).expect("Failed to rewind encoded buffer");
+        encoded_output_buffer
+            .seek(SeekFrom::Start(0))
+            .expect("Failed to rewind encoded buffer");
 
         // 2. Read header first
-        let header = Headers::from_reader(&mut encoded_output_buffer).expect("Failed to read header for empty file");
-        
+        let header = Headers::from_reader(&mut encoded_output_buffer)
+            .expect("Failed to read header for empty file");
+
         let mut decoded_output_buffer = Cursor::new(Vec::new());
 
         // 3. Decode with decryption

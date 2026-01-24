@@ -1,4 +1,8 @@
-use crate::{constants::{MAGIC_BYTES, VERSION}, huffman::tree::{deserialize_tree, serialize_tree, Node}, crypto::IV_LEN};
+use crate::{
+    constants::{MAGIC_BYTES, VERSION},
+    crypto::IV_LEN,
+    huffman::tree::{deserialize_tree, serialize_tree, Node},
+};
 use std::io::Read;
 
 #[derive(Debug, Clone)]
@@ -27,12 +31,17 @@ pub fn write_header(original_size: u64, checksum: u32, name: &str) -> Headers {
         original_file_name: name.to_string(),
         compressed_size: 0,
         payload_actual_size: 0,
-        salt: [0u8; 16], // Initialized to zeros
-        iv: [0u8; IV_LEN],   // Initialized to zeros
-        tag: [0u8; 16],  // Initialized to zeros
+        salt: [0u8; 16],   // Initialized to zeros
+        iv: [0u8; IV_LEN], // Initialized to zeros
+        tag: [0u8; 16],    // Initialized to zeros
         padding_bits: 0,
         checksum,
-        tree: Node { weight: 0, symbol: None, left: None, right: None },
+        tree: Node {
+            weight: 0,
+            symbol: None,
+            left: None,
+            right: None,
+        },
     }
 }
 
@@ -43,7 +52,9 @@ impl Default for Headers {
 }
 
 impl Headers {
-    fn read_bytes<R: Read, const N: usize>(reader: &mut R) -> Result<[u8; N], Box<dyn std::error::Error>> {
+    fn read_bytes<R: Read, const N: usize>(
+        reader: &mut R,
+    ) -> Result<[u8; N], Box<dyn std::error::Error>> {
         let mut buf = [0u8; N];
         reader.read_exact(&mut buf)?;
         Ok(buf)
@@ -63,7 +74,12 @@ impl Headers {
             tag: [0u8; 16],
             padding_bits: 0,
             checksum: 0,
-            tree: Node { weight: 0, symbol: None, left: None, right: None },
+            tree: Node {
+                weight: 0,
+                symbol: None,
+                left: None,
+                right: None,
+            },
         }
     }
 
@@ -126,20 +142,19 @@ impl Headers {
         let tree = deserialize_tree(&mut stream);
 
         Ok(Headers {
-           magic_bytes,
-           version,
-           flags,
-           original_size,
-           original_file_name,
-           compressed_size,
-           payload_actual_size,
-           salt,
-           iv,
-           tag,
-           padding_bits,
-           checksum,
-           tree
+            magic_bytes,
+            version,
+            flags,
+            original_size,
+            original_file_name,
+            compressed_size,
+            payload_actual_size,
+            salt,
+            iv,
+            tag,
+            padding_bits,
+            checksum,
+            tree,
         })
     }
 }
-

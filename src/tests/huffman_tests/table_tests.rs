@@ -1,4 +1,6 @@
-use crate::huffman::{freq::compute_frequencies, table::generate_code_table, tree::build_huffman_tree};
+use crate::huffman::{
+    freq::compute_frequencies, table::generate_code_table, tree::build_huffman_tree,
+};
 use std::io::Cursor;
 
 #[cfg(test)]
@@ -34,19 +36,26 @@ fn codes_are_prefix_free() {
     let buf = b"test string";
     let table = table_for(buf);
 
-    let codes: Vec<(u32, u8)> = table
-        .iter()
-        .filter(|&&(_, len)| len > 0)
-        .cloned()
-        .collect();
+    let codes: Vec<(u32, u8)> = table.iter().filter(|&&(_, len)| len > 0).cloned().collect();
 
     println!("Table: {:?}", codes);
 
     for (i, &(bits_a, len_a)) in codes.iter().enumerate() {
         for &(bits_b, len_b) in &codes[i + 1..] {
             let min_len = len_a.min(len_b);
-            let mask = if min_len == 32 { u32::MAX } else { u32::MAX << (32 - min_len) };
-            assert!((bits_a & mask) != (bits_b & mask), "prefix collision detected between {:b} (len {}) and {:b} (len {})", bits_a, len_a, bits_b, len_b);
+            let mask = if min_len == 32 {
+                u32::MAX
+            } else {
+                u32::MAX << (32 - min_len)
+            };
+            assert!(
+                (bits_a & mask) != (bits_b & mask),
+                "prefix collision detected between {:b} (len {}) and {:b} (len {})",
+                bits_a,
+                len_a,
+                bits_b,
+                len_b
+            );
         }
     }
 }
