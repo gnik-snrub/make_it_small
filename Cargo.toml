@@ -1,10 +1,24 @@
 [package]
 name = "mismall" #short for "make it small"
-version = "1.0.0"
+version = "2.0.0"
 edition = "2024"
+description = "Streaming Huffman compression library with AES-256-GCM encryption and archive support"
+license = "MIT"
+authors = ["Josiah <josiah@dev>"]
+repository = "https://github.com/username/mismall"
+keywords = ["compression", "huffman", "encryption", "archive", "streaming"]
+categories = ["compression", "cryptography"]
+
+[features]
+default = ["compression", "archives", "encryption"]
+compression = []
+archives = ["compression"]
+encryption = []
+async = []
+cli = ["compression", "archives", "encryption", "clap", "indicatif", "console"]
 
 [dependencies]
-clap = { version = "4.5.41", features = ["derive"] }
+# Core dependencies - always included
 rand = "0.9.2"
 serde = { version = "1.0.219", features = ["derive"] }
 aes-gcm = { version = "0.10", features = ["std"] }
@@ -13,5 +27,15 @@ sha2 = "0.10"
 hmac = "0.12"
 typenum = "1.12"
 tempfile = "3.2.0"
-indicatif = "0.17"
-console = "0.15"
+
+# CLI-only dependencies
+clap = { version = "4.5.41", features = ["derive"], optional = true }
+indicatif = { version = "0.17", optional = true }
+console = { version = "0.15", optional = true }
+
+# Optional error handling
+thiserror = { version = "1.0", optional = true }
+
+[[bin]]
+name = "mismall"
+required-features = ["cli"]

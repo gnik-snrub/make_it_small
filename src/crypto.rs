@@ -33,8 +33,7 @@ pub fn encrypt_stream<R: Read, W: Write>(
     let mut total_bytes_written = 0;
 
     // Optimized buffer for plaintext - avoid zero-initialization
-    let mut plaintext_buffer = Vec::with_capacity(chunk_size);
-    plaintext_buffer.resize(chunk_size, 0);
+    let mut plaintext_buffer = vec![0; chunk_size];
 
     // Extract fixed IV part (first 4 bytes) and initial counter value (last 8 bytes)
     let fixed_iv_part: [u8; 4] = initial_nonce[0..4].try_into().unwrap(); // Should not panic due to IV_LEN
@@ -64,10 +63,7 @@ pub fn encrypt_stream<R: Read, W: Write>(
                 &mut plaintext_buffer[..bytes_read], // Buffer contains plaintext and will be overwritten with ciphertext
             )
             .map_err(|e| {
-                Box::new(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    e.to_string(),
-                )) as Box<dyn std::error::Error>
+                Box::new(std::io::Error::other(e.to_string())) as Box<dyn std::error::Error>
             })?;
 
         writer.write_all(&plaintext_buffer[..bytes_read])?; // Write ciphertext
@@ -92,11 +88,9 @@ pub fn decrypt_stream<R: Read, W: Write>(
     let mut total_bytes_written = 0;
 
     // Optimized buffer for decrypted plaintext - pre-allocate capacity
-    let mut plaintext_buffer = Vec::with_capacity(chunk_size);
-    plaintext_buffer.resize(chunk_size, 0);
+    let mut plaintext_buffer = vec![0; chunk_size];
     // Pre-allocated buffer for encrypted chunk + tag
-    let mut ciphertext_read_buffer = Vec::with_capacity(chunk_size + TAG_LEN);
-    ciphertext_read_buffer.resize(chunk_size + TAG_LEN, 0);
+    let mut ciphertext_read_buffer = vec![0; chunk_size + TAG_LEN];
 
     // Extract fixed IV part (first 4 bytes) and initial counter value (last 8 bytes)
     let fixed_iv_part: [u8; 4] = initial_nonce[0..4].try_into().unwrap(); // Should not panic due to IV_LEN
@@ -139,12 +133,12 @@ pub fn decrypt_stream<R: Read, W: Write>(
                 nonce,
                 aad,                                             // Associated data for this chunk
                 &mut plaintext_buffer[..current_ciphertext_len], // Buffer contains ciphertext
-                &Tag::<Aes256Gcm>::from_slice(&tag_buffer),      // Tag
+                Tag::<Aes256Gcm>::from_slice(&tag_buffer),       // Tag
             )
             .map_err(|e| {
                 Box::new(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,
-                    format!("Decryption error: {}", e.to_string()),
+                    format!("Decryption error: {}", e),
                 )) as Box<dyn std::error::Error>
             })?;
 

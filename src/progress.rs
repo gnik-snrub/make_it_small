@@ -1,189 +1,243 @@
-use indicatif::{ProgressBar, ProgressStyle};
-use std::io::{self, Read, Write};
-use std::time::{Duration, Instant};
+//! Progress tracking and callback utilities
+//!
+//! This module provides types and utilities for tracking progress during
+//! long-running compression, decompression, and archive operations.
 
-/// Progress tracking configuration
-pub struct ProgressConfig {
-    pub show_progress: bool,
-    pub operation: OperationType,
-}
-
+/// Progress information for operations
 #[derive(Debug, Clone)]
-pub enum OperationType {
-    Compression(String),
-    Decompression(String),
-    Encryption(String),
-    Decryption(String),
-    ArchiveCreation(String),
-    ArchiveExtraction(String),
+pub struct ProgressInfo {
+    /// Overall progress percentage (0.0 to 100.0)
+    pub percentage: f32,
+    /// Number of bytes processed so far
+    pub bytes_processed: u64,
+    /// Total number of bytes to process
+    pub total_bytes: u64,
+    /// Current processing stage
+    pub stage: ProcessingStage,
+    /// Optional human-readable status message
+    pub message: Option<String>,
 }
 
-/// Progress tracker with ETA calculation
-pub struct ProgressTracker {
-    progress_bar: Option<ProgressBar>,
-    start_time: Instant,
-    config: ProgressConfig,
-    total_bytes: u64,
-    processed_bytes: u64,
-}
-
-impl ProgressTracker {
-    pub fn new(config: ProgressConfig, total_bytes: u64) -> Self {
-        let progress_bar = if config.show_progress {
-            Some(create_progress_bar(&config.operation, total_bytes))
+impl ProgressInfo {
+    /// Create a new progress info
+    pub fn new(stage: ProcessingStage, bytes_processed: u64, total_bytes: u64) -> Self {
+        let percentage = if total_bytes > 0 {
+            (bytes_processed as f32 / total_bytes as f32) * 100.0
         } else {
-            None
+            100.0
         };
 
         Self {
-            progress_bar,
-            start_time: Instant::now(),
-            config,
+            percentage: percentage.clamp(0.0, 100.0),
+            bytes_processed,
             total_bytes,
-            processed_bytes: 0,
+            stage,
+            message: None,
         }
     }
 
-    pub fn update(&mut self, bytes_processed: u64) -> io::Result<()> {
-        self.processed_bytes += bytes_processed;
-
-        if let Some(ref mut pb) = self.progress_bar {
-            pb.set_position(self.processed_bytes);
-
-            // Update ETA and rate every 100MB or every second
-            if self.processed_bytes % (100 * 1024 * 1024) == 0
-                || self.start_time.elapsed() >= Duration::from_secs(1)
-            {
-                let elapsed = self.start_time.elapsed().as_secs_f64();
-                if elapsed > 0.0 {
-                    let rate = self.processed_bytes as f64 / elapsed / (1024.0 * 1024.0); // MB/s
-                    let remaining = if self.processed_bytes > 0 {
-                        (self.total_bytes - self.processed_bytes) as f64
-                            / (self.processed_bytes as f64 / elapsed) // seconds
-                    } else {
-                        0.0
-                    };
-
-                    pb.set_message(format!("{:.1} MB/s, ETA: {:.0}s", rate, remaining));
-                }
-            }
-        }
-
-        Ok(())
+    /// Add a message to the progress info
+    pub fn with_message<S: Into<String>>(mut self, message: S) -> Self {
+        self.message = Some(message.into());
+        self
     }
+}
 
-    pub fn finish(&mut self) {
-        if let Some(ref pb) = self.progress_bar {
-            let elapsed = self.start_time.elapsed();
-            let rate = if elapsed.as_secs_f64() > 0.0 {
-                self.processed_bytes as f64 / elapsed.as_secs_f64() / (1024.0 * 1024.0)
-            } else {
-                0.0
-            };
+/// Stages of processing for compression/decompression operations
+#[derive(Debug, Clone, PartialEq)]
+pub enum ProcessingStage {
+    /// Reading input file
+    Reading,
+    /// Computing Huffman frequencies
+    ComputingFrequencies,
+    /// Building Huffman tree
+    BuildingTree,
+    /// Encoding data with Huffman codes
+    Encoding,
+    /// Encrypting data (if password provided)
+    Encrypting,
+    /// Decrypting data (if encrypted)
+    Decrypting,
+    /// Decoding Huffman data
+    Decoding,
+    /// Writing output file
+    Writing,
+    /// Finalizing operation
+    Finalizing,
+}
 
-            pb.finish_with_message(format!(
-                "Completed in {:.1}s ({:.1} MB/s)",
-                elapsed.as_secs_f64(),
-                rate
-            ));
-        }
-    }
-
-    pub fn set_message(&mut self, message: &str) {
-        if let Some(ref pb) = self.progress_bar {
-            pb.set_message(message.to_string());
+impl fmt::Display for ProcessingStage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ProcessingStage::Reading => write!(f, "Reading"),
+            ProcessingStage::ComputingFrequencies => write!(f, "Computing frequencies"),
+            ProcessingStage::BuildingTree => write!(f, "Building Huffman tree"),
+            ProcessingStage::Encoding => write!(f, "Encoding"),
+            ProcessingStage::Encrypting => write!(f, "Encrypting"),
+            ProcessingStage::Decrypting => write!(f, "Decrypting"),
+            ProcessingStage::Decoding => write!(f, "Decoding"),
+            ProcessingStage::Writing => write!(f, "Writing"),
+            ProcessingStage::Finalizing => write!(f, "Finalizing"),
         }
     }
 }
 
-impl Drop for ProgressTracker {
-    fn drop(&mut self) {
-        if let Some(ref pb) = self.progress_bar {
-            if !pb.is_finished() {
-                pb.abandon();
-            }
-        }
+use std::fmt;
+
+/// Type alias for progress callback functions
+pub type ProgressCallback = Box<dyn FnMut(&ProgressInfo) + Send + Sync>;
+
+/// Builder for setting up progress callbacks
+pub struct ProgressBuilder {
+    callback: Option<ProgressCallback>,
+}
+
+impl std::fmt::Debug for ProgressBuilder {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ProgressBuilder")
+            .field("callback", &"<callback>")
+            .finish()
     }
 }
 
-/// Create a styled progress bar based on operation type
-fn create_progress_bar(operation: &OperationType, total_bytes: u64) -> ProgressBar {
-    let pb = ProgressBar::new(total_bytes);
+impl ProgressBuilder {
+    /// Create a new progress builder
+    pub fn new() -> Self {
+        Self { callback: None }
+    }
 
-    let msg = match operation {
-        OperationType::Compression(filename) => format!("Compressing {}...", filename),
-        OperationType::Decompression(filename) => format!("Decompressing {}...", filename),
-        OperationType::Encryption(filename) => format!("Encrypting {}...", filename),
-        OperationType::Decryption(filename) => format!("Decrypting {}...", filename),
-        OperationType::ArchiveCreation(filename) => format!("Creating archive {}...", filename),
-        OperationType::ArchiveExtraction(filename) => format!("Extracting archive {}...", filename),
-    };
+    /// Set a progress callback function
+    pub fn with_callback<F>(mut self, callback: F) -> Self
+    where
+        F: FnMut(&ProgressInfo) + Send + Sync + 'static,
+    {
+        self.callback = Some(Box::new(callback));
+        self
+    }
 
-    pb.set_style(
-        ProgressStyle::default_bar()
-            .template("{spinner:.green} {msg} [{bar:40.cyan/blue}] {pos}/{len} bytes ({percent}%)")
-            .expect("Invalid progress template")
-            .progress_chars("##-"),
-    );
-
-    pb.set_message(msg);
-    pb
+    /// Build the progress callback
+    pub fn build(self) -> Option<ProgressCallback> {
+        self.callback
+    }
 }
 
-/// Progress-aware wrapper for Read operations
-pub struct ProgressReader<R: Read> {
-    inner: R,
-    tracker: Option<ProgressTracker>,
+impl Default for ProgressBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
-impl<R: Read> ProgressReader<R> {
-    pub fn new(reader: R, tracker: Option<ProgressTracker>) -> Self {
+/// Utility struct for tracking progress internally
+pub struct ProgressTracker {
+    total_bytes: u64,
+    bytes_processed: u64,
+    stage: ProcessingStage,
+    callback: Option<ProgressCallback>,
+}
+
+impl ProgressTracker {
+    /// Create a new progress tracker
+    pub fn new(
+        total_bytes: u64,
+        stage: ProcessingStage,
+        callback: Option<ProgressCallback>,
+    ) -> Self {
         Self {
-            inner: reader,
-            tracker,
+            total_bytes,
+            bytes_processed: 0,
+            stage,
+            callback,
+        }
+    }
+
+    /// Update progress with additional bytes processed
+    pub fn update(&mut self, bytes: u64) {
+        self.bytes_processed += bytes;
+        self.notify();
+    }
+
+    /// Set a new processing stage
+    pub fn set_stage(&mut self, stage: ProcessingStage) {
+        self.stage = stage;
+        self.notify();
+    }
+
+    /// Add bytes to the total (for multi-stage operations)
+    pub fn add_total_bytes(&mut self, additional: u64) {
+        self.total_bytes += additional;
+        self.notify();
+    }
+
+    /// Send progress notification to callback
+    pub fn notify(&mut self) {
+        if let Some(ref mut callback) = self.callback {
+            let info =
+                ProgressInfo::new(self.stage.clone(), self.bytes_processed, self.total_bytes);
+            callback(&info);
+        }
+    }
+
+    /// Get current progress percentage
+    pub fn percentage(&self) -> f32 {
+        if self.total_bytes > 0 {
+            (self.bytes_processed as f32 / self.total_bytes as f32) * 100.0
+        } else {
+            100.0
         }
     }
 }
 
-impl<R: Read> Read for ProgressReader<R> {
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let bytes_read = self.inner.read(buf)?;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-        if let Some(ref mut tracker) = self.tracker {
-            tracker.update(bytes_read as u64)?;
-        }
-
-        Ok(bytes_read)
-    }
-}
-
-/// Progress-aware wrapper for Write operations  
-pub struct ProgressWriter<W: Write> {
-    inner: W,
-    tracker: Option<ProgressTracker>,
-}
-
-impl<W: Write> ProgressWriter<W> {
-    pub fn new(writer: W, tracker: Option<ProgressTracker>) -> Self {
-        Self {
-            inner: writer,
-            tracker,
-        }
-    }
-}
-
-impl<W: Write> Write for ProgressWriter<W> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let bytes_written = self.inner.write(buf)?;
-
-        if let Some(ref mut tracker) = self.tracker {
-            tracker.update(bytes_written as u64)?;
-        }
-
-        Ok(bytes_written)
+    #[test]
+    fn test_progress_info_creation() {
+        let info = ProgressInfo::new(ProcessingStage::Encoding, 500, 1000);
+        assert_eq!(info.percentage, 50.0);
+        assert_eq!(info.bytes_processed, 500);
+        assert_eq!(info.total_bytes, 1000);
+        assert_eq!(info.stage, ProcessingStage::Encoding);
     }
 
-    fn flush(&mut self) -> io::Result<()> {
-        self.inner.flush()
+    #[test]
+    fn test_progress_info_clamping() {
+        // Test percentage clamping
+        let info = ProgressInfo::new(ProcessingStage::Encoding, 1500, 1000);
+        assert_eq!(info.percentage, 100.0);
+
+        let info = ProgressInfo::new(ProcessingStage::Encoding, -100, 1000);
+        assert_eq!(info.percentage, 0.0);
+    }
+
+    #[test]
+    fn test_progress_tracker() {
+        let mut tracker = ProgressTracker::new(1000, ProcessingStage::Encoding, None);
+        assert_eq!(tracker.percentage(), 0.0);
+
+        tracker.update(500);
+        assert_eq!(tracker.percentage(), 50.0);
+
+        tracker.set_stage(ProcessingStage::Finalizing);
+        // Should still maintain the same progress percentage
+        assert_eq!(tracker.percentage(), 50.0);
+    }
+
+    #[test]
+    fn test_progress_callback() {
+        use std::sync::atomic::{AtomicU32, Ordering};
+
+        static CALL_COUNT: AtomicU32 = AtomicU32::new(0);
+
+        let callback = Box::new(|_: &ProgressInfo| {
+            CALL_COUNT.fetch_add(1, Ordering::SeqCst);
+        });
+
+        let mut tracker = ProgressTracker::new(100, ProcessingStage::Encoding, Some(callback));
+
+        tracker.update(50);
+        tracker.update(50);
+
+        assert_eq!(CALL_COUNT.load(Ordering::SeqCst), 3); // 2 updates + 1 creation
     }
 }

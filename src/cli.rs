@@ -9,7 +9,6 @@ use crate::huffman::{decoder::decode, encoder::encode};
 use crate::archive::{self, add_to_archive, create_archive, extract_archive};
 use crate::flags;
 use crate::headers::Headers;
-use crate::progress::{OperationType, ProgressConfig, ProgressTracker};
 
 #[derive(Parser, Debug)]
 #[command(name = "Make It Small")]
@@ -380,7 +379,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 };
                 let output_path = Path::new(&output_path_str);
 
-                let mut output_file = BufWriter::new(File::create(&output_path).map_err(|e| {
+                let mut output_file = BufWriter::new(File::create(output_path).map_err(|e| {
                     eprintln!(
                         "Error creating output file '{}': {}",
                         output_path.display(),

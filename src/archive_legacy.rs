@@ -38,7 +38,7 @@ pub fn create_archive<W: Write + Seek>(
             &mut temp_body_file, // Encode directly to the temporary file
             chunk_size,          // Pass chunk_size
         )
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
 
         total_original_size += encode_info.original_size;
     }
@@ -139,7 +139,7 @@ pub fn extract_archive<R: Read + Seek>(
             &mut output_file,
             chunk_size, // Pass chunk_size
         )
-        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))?;
+        .map_err(|e| std::io::Error::other(e.to_string()))?;
 
         // After decode, explicitly advance the main reader past the payload
         // This is necessary because reader.take() only provides a limited view,
@@ -251,22 +251,18 @@ pub fn list_contents<R: Read + Seek>(reader: &mut R) -> std::io::Result<Vec<Stri
 
     if flags::is_archive(master_header.flags) {
         loop {
-            let _embedded_header_start_pos =
-                reader.seek(std::io::SeekFrom::Current(0)).map_err(|e| {
-                    std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        format!("Failed to seek reader: {}", e),
-                    )
-                })?;
+            let _embedded_header_start_pos = reader
+                .stream_position()
+                .map_err(|e| std::io::Error::other(format!("Failed to seek reader: {}", e)))?;
 
             let embedded_header_result = Headers::from_reader(reader);
             let embedded_header = match embedded_header_result {
                 Ok(h) => h,
                 Err(e) => {
-                    if let Some(io_err) = e.downcast_ref::<std::io::Error>() {
-                        if io_err.kind() == std::io::ErrorKind::UnexpectedEof {
-                            break; // End of archive body
-                        }
+                    if let Some(io_err) = e.downcast_ref::<std::io::Error>()
+                        && io_err.kind() == std::io::ErrorKind::UnexpectedEof
+                    {
+                        break; // End of archive body
                     }
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::InvalidData,
@@ -312,23 +308,19 @@ pub fn extract_file<R: Read + Seek>(
     }
 
     loop {
-        let _embedded_header_start_pos =
-            reader.seek(std::io::SeekFrom::Current(0)).map_err(|e| {
-                std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    format!("Failed to seek reader: {}", e),
-                )
-            })?;
+        let _embedded_header_start_pos = reader
+            .stream_position()
+            .map_err(|e| std::io::Error::other(format!("Failed to seek reader: {}", e)))?;
 
         let embedded_header_result = Headers::from_reader(reader);
         let embedded_header = match embedded_header_result {
             Ok(h) => h,
             Err(e) => {
                 // If it's EOF, it means we've processed all embedded files
-                if let Some(io_err) = e.downcast_ref::<std::io::Error>() {
-                    if io_err.kind() == std::io::ErrorKind::UnexpectedEof {
-                        break; // End of archive body
-                    }
+                if let Some(io_err) = e.downcast_ref::<std::io::Error>()
+                    && io_err.kind() == std::io::ErrorKind::UnexpectedEof
+                {
+                    break; // End of archive body
                 }
                 return Err(std::io::Error::new(
                     std::io::ErrorKind::InvalidData,

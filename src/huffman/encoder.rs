@@ -88,7 +88,7 @@ pub fn encode<R: Read + Seek, W: Write>(
 
     // Create a temporary file to store the payload during the first pass
     let mut temp_payload_file = tempfile::tempfile()?;
-    let actual_payload_size: u64;
+
     let mut actual_padding_bits: u8 = 0;
     let mut huffman_encoded = false;
 
@@ -116,7 +116,7 @@ pub fn encode<R: Read + Seek, W: Write>(
         huffman_encoded = true;
     }
     temp_payload_file.flush()?;
-    actual_payload_size = temp_payload_file.stream_position()?;
+    let actual_payload_size = temp_payload_file.stream_position()?;
     temp_payload_file.seek(SeekFrom::Start(0))?; // Rewind
 
     // --- Decide on final payload source and flags ---
@@ -154,6 +154,8 @@ pub fn encode<R: Read + Seek, W: Write>(
         header.salt = crypto::generate_random_bytes::<{ crypto::SALT_LEN }>();
         header.iv = crypto::generate_random_bytes::<{ crypto::IV_LEN }>();
 
+        #[allow(clippy::unnecessary_unwrap)]
+        // Safe - we're in the else branch after is_none() check
         let key = crypto::derive_key(encrypt_password.unwrap().as_bytes(), &header.salt);
 
         // Create a temporary file for the encrypted payload

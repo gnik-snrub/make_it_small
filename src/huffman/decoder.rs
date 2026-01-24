@@ -103,7 +103,7 @@ pub fn decode<R: Read + Seek, W: Write>(
         let mut decoded_bytes_count = 0;
 
         // Calculate total number of actual data bits
-        let total_data_bits = (header.payload_actual_size as u64 * 8) - header.padding_bits as u64;
+        let total_data_bits = (header.payload_actual_size * 8) - header.padding_bits as u64;
         let mut bits_read_count: u64 = 0; // New counter for bits read
 
         while decoded_bytes_count < header.original_size {

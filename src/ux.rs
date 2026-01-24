@@ -1,3 +1,4 @@
+#[cfg(feature = "cli")]
 use console::style;
 use std::fs;
 use std::io::{self, Write};
@@ -13,6 +14,7 @@ pub enum ConflictResolution {
 
 /// Enhanced file conflict resolution with better UX
 pub fn resolve_file_conflict(file_path: &Path) -> io::Result<Option<ConflictResolution>> {
+    #[cfg(feature = "cli")]
     let _term = console::Term::stdout();
 
     if !file_path.exists() {
@@ -28,81 +30,29 @@ pub fn resolve_file_conflict(file_path: &Path) -> io::Result<Option<ConflictReso
         .unwrap_or_else(|_| "unknown".to_string());
 
     println!();
-    println!("{}", style("File Conflict Detected").yellow().bold());
-    println!("┌─────────────────────────────────────────");
-    println!("│ File: {}", style(file_path.display()).cyan());
-    println!("│ Size: {} bytes", style(size).dim());
-    println!("│ Age: {} seconds ago", style(modified).dim());
-    println!("├─────────────────────────────────────────");
+    println!("File Conflict Detected");
+    println!("│ File: {}", file_path.display());
+    println!("│ Size: {} bytes", size);
+    println!("│ Age: {} seconds ago", modified);
+    println!("│ (O)verwrite existing file");
+    println!("│ (B)ackup and overwrite");
+    println!("│ (C)ancel operation");
+    println!("{}", "─".repeat(50));
 
-    println!(
-        "{} {}",
-        style("[O]").green().bold(),
-        style("Overwrite existing file").white()
-    );
-    println!(
-        "{} {}",
-        style("[B]").blue().bold(),
-        style("Create backup and overwrite").white()
-    );
-    println!(
-        "{} {}",
-        style("[C]").red().bold(),
-        style("Cancel operation").white()
-    );
-    println!("└─────────────────────────────────────────");
+    loop {
+        print!("Choose an option [O/B/C]: ");
+        io::stdout().flush()?;
 
-    print!("{}", style("Your choice [O/B/C]: ").yellow().bold());
-    io::stdout().flush()?;
+        let mut choice = String::new();
+        io::stdin().read_line(&mut choice)?;
 
-    let mut choice = String::new();
-    io::stdin().read_line(&mut choice)?;
-
-    match choice.trim().to_lowercase().as_str() {
-        "o" | "overwrite" => Ok(Some(ConflictResolution::Overwrite)),
-        "b" | "backup" => {
-            // Create backup with timestamp
-            let backup_path = file_path.with_extension(format!(
-                "{}.backup",
-                std::time::SystemTime::now()
-                    .duration_since(std::time::UNIX_EPOCH)
-                    .unwrap()
-                    .as_secs()
-            ));
-
-            fs::rename(file_path, &backup_path)?;
-            println!(
-                "✓ Backed up existing file to: {}",
-                style(backup_path.display()).green()
-            );
-            Ok(Some(ConflictResolution::Overwrite))
-        }
-        "c" | "cancel" => {
-            println!("{}", style("Operation cancelled by user").yellow());
-            Ok(Some(ConflictResolution::Cancel))
-        }
-        _ => {
-            println!("{}", style("Invalid choice. Please try again.").red());
-            // Recursively ask again
-            resolve_file_conflict(file_path)
+        match choice.trim().to_lowercase().as_str() {
+            "o" | "overwrite" => return Ok(Some(ConflictResolution::Overwrite)),
+            "b" | "backup" => return Ok(Some(ConflictResolution::Backup)),
+            "c" | "cancel" => return Ok(Some(ConflictResolution::Cancel)),
+            _ => {
+                println!("Invalid choice. Please try again.");
+            }
         }
     }
-}
-
-/// Enhanced error message display with suggestions
-pub fn display_error_with_suggestions(error: &str) {
-    let _term = console::Term::stdout();
-
-    println!();
-    println!("{}", style("❌ Error").red().bold());
-    println!("{}", style("─".repeat(50)).red());
-
-    // Split error message and display with formatting
-    for line in error.lines() {
-        println!("│ {}", style(line).white());
-    }
-
-    println!("{}", style("─".repeat(50)).red());
-    println!("{}", style("Press Enter to continue...").dim());
-    io::stdin().read_line(&mut String::new()).ok();
 }
