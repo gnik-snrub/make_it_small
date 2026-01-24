@@ -7,18 +7,68 @@ use crate::{
 };
 use std::io::{Read, Seek, SeekFrom, Write}; // Added SeekFrom for seek operations
 
+/// Information about the encoding operation result
+///
+/// # Fields
+///
+/// * `original_size` - Size of the original uncompressed file in bytes
+/// * `compressed_size` - Size of the final output (includes encryption overhead if applicable)
+/// * `padding_bits` - Number of padding bits added to complete the final byte (0-7)
+#[derive(Debug)]
 pub struct EncodeInfo {
     pub original_size: u64,
     pub compressed_size: u64,
     pub padding_bits: u8,
 }
 
+/// Encodes a file using Huffman coding with streaming architecture and optional encryption
+///
+/// This function performs a two-pass encoding process:
+/// 1. First pass: Compute symbol frequencies and checksum in configurable chunks
+/// 2. Second pass: Encode data using bit-level packing with optional AES-256-GCM encryption
+///
+/// # Arguments
+///
+/// * `reader` - Input data source implementing Read + Seek (must support rewinding)
+/// * `name` - Original filename for storage in the header
+/// * `encrypt_password` - Optional password for AES-256-GCM encryption (None = no encryption)
+/// * `writer` - Output destination implementing Write
+/// * `chunk_size` - Memory chunk size for processing (affects memory usage, not compression ratio)
+///
+/// # Returns
+///
+/// Returns `EncodeInfo` containing original size, compressed size, and padding bits
+///
+/// # Memory Usage
+///
+/// Maximum memory usage = `chunk_size` + ~50KB overhead. Uses temporary files for
+/// intermediate processing to avoid loading entire files into memory.
+///
+/// # Examples
+///
+/// ```rust
+/// use std::io::Cursor;
+/// use mismall::huffman::encoder::encode;
+/// use mismall::crypto::DEFAULT_CHUNK_SIZE;
+///
+/// let input = b"Hello, world!";
+/// let mut reader = Cursor::new(input);
+/// let mut output = Cursor::new(Vec::new());
+///
+/// let info = encode(&mut reader, "test.txt", None, &mut output, DEFAULT_CHUNK_SIZE)?;
+/// println!("Compressed {} bytes to {} bytes", info.original_size, info.compressed_size);
+/// # Ok::<(), Box<dyn std::error::Error>>(())
+/// ```
+///
+/// # Errors
+///
+/// Returns errors for I/O failures, invalid input, or encryption failures
 pub fn encode<R: Read + Seek, W: Write>(
     reader: &mut R,
     name: &str,
     encrypt_password: Option<&str>,
     writer: &mut W,
-    chunk_size: usize, // New parameter
+    chunk_size: usize,
 ) -> Result<EncodeInfo, Box<dyn std::error::Error>> {
     // --- Pass 1: Compute Frequencies, Checksum, and Original Size ---
     let original_position = reader.stream_position()?;

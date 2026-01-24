@@ -13,7 +13,7 @@ use crate::headers::Headers; // Import Headers struct // Import flags module
 
 #[derive(Parser, Debug)]
 #[command(name = "Make It Small")]
-#[command(about = "File compression and decompression application", long_about=None)]
+#[command(about = "Streaming file compression and encryption tool", long_about = Some("A sophisticated file compressor with streaming architecture, AES-256-GCM encryption, and archive support. Handles arbitrarily large files with bounded memory usage."))]
 pub struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
@@ -21,38 +21,68 @@ pub struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    #[command(about = "Compress files with optional encryption")]
     Compress {
+        #[clap(help = "Input file or directory to compress")]
         #[clap(index = 1)]
         name_in: String,
 
+        #[clap(help = "Output basename (without .small extension)")]
         #[clap(index = 2)]
         name_out: Option<String>,
 
+        #[clap(long_help = "Display compression ratio after completion")]
         #[clap(short, long, action = clap::ArgAction::SetTrue)]
         ratio: bool,
 
+        #[clap(long_help = "Encrypt with AES-256-GCM using this password")]
         #[clap(short, long)]
         password: Option<String>,
 
-        #[clap(long)]
+        #[clap(
+            long_help = "Memory chunk size for processing (default: 16MB, min: 64KB recommended)"
+        )]
+        #[clap(long, value_name = "SIZE")]
         chunk_size: Option<usize>,
     },
+    #[command(about = "Decompress files with optional decryption")]
     Decompress {
+        #[clap(help = "Input .small file to decompress")]
         name_in: String,
+
+        #[clap(help = "Output filename (default: restore original name from header)")]
         name_out: Option<String>,
+
+        #[clap(long_help = "Decrypt with AES-256-GCM using this password")]
         #[clap(short, long)]
         password: Option<String>,
-        #[clap(long)]
+
+        #[clap(
+            long_help = "Memory chunk size for processing (default: 16MB, min: 64KB recommended)"
+        )]
+        #[clap(long, value_name = "SIZE")]
         chunk_size: Option<usize>,
     },
+    #[command(about = "List contents of archive files")]
     List {
+        #[clap(help = "Archive .small file to inspect")]
         name_in: String,
     },
+    #[command(about = "Extract specific file from archive")]
     ExtractFile {
+        #[clap(help = "Archive .small file containing the file")]
         name_in: String,
+
+        #[clap(help = "Filename to extract from archive")]
         file_to_extract: String,
+
+        #[clap(help = "Output filename for extracted file")]
         name_out: Option<String>,
-        #[clap(long)]
+
+        #[clap(
+            long_help = "Memory chunk size for processing (default: 16MB, min: 64KB recommended)"
+        )]
+        #[clap(long, value_name = "SIZE")]
         chunk_size: Option<usize>,
     },
 }

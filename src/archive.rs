@@ -174,7 +174,7 @@ pub fn add_to_archive<R1: Read + Seek, R2: Read + Seek, W: Write + Seek>(
     existing_reader: &mut R1,
     new_reader: &mut R2,
     writer: &mut W,
-    chunk_size: usize,
+    _chunk_size: usize,
 ) -> std::io::Result<()> {
     // 1. Read master header of existing archive
     let master_header_existing = Headers::from_reader(existing_reader).map_err(|e| {
