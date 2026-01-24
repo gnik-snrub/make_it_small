@@ -38,25 +38,25 @@ pub fn decode<R: Read + Seek, W: Write>( // Added Seek bound to R
 
         // Decrypt stream to a temporary file
         let mut decrypted_temp_file = tempfile()?; // Use tempfile directly
-        let decrypted_bytes_written = decrypt_stream(
+        let _decrypted_bytes_written = decrypt_stream(
             &mut payload_reader, // Input is the encrypted payload stream
             &mut decrypted_temp_file, // Output decrypted data to a temporary file
             &key,
-            header.iv.as_ref(), // Use header.iv as initial_nonce_bytes
+            &header.iv,
             &[], // No AAD for now
             chunk_size, // Pass chunk size
         )?;
         decrypted_temp_file.seek(std::io::SeekFrom::Start(0))?; // Rewind temp file
 
         // Replace payload_reader with the decrypted stream from the temporary file
-        payload_reader = Box::new(decrypted_temp_file);
+        payload_reader = Box::new(decrypted_temp_file.take(header.payload_actual_size));
     }
 
 
     if is_stored_raw(header.flags) {
         // Read original data directly from the (potentially decrypted) payload reader
         // Limit the read to original_size to prevent reading data of subsequent files in an archive
-        std::io::copy(&mut payload_reader.take(header.original_size), writer)?;
+        std::io::copy(&mut payload_reader.take(header.payload_actual_size), writer)?;
     } else {
         // Decompress Huffman data
         // Pass the payload_reader to BitReader
@@ -65,7 +65,7 @@ pub fn decode<R: Read + Seek, W: Write>( // Added Seek bound to R
         let mut decoded_bytes_count = 0;
 
         // Calculate total number of actual data bits
-        let total_data_bits = (header.compressed_size as u64 * 8) - header.padding_bits as u64;
+        let total_data_bits = (header.payload_actual_size as u64 * 8) - header.padding_bits as u64;
         let mut bits_read_count: u64 = 0; // New counter for bits read
 
         while decoded_bytes_count < header.original_size {

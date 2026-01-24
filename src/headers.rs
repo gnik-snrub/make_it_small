@@ -1,4 +1,4 @@
-use crate::{constants::{MAGIC_BYTES, VERSION}, huffman::tree::{deserialize_tree, serialize_tree, Node}, crypto};
+use crate::{constants::{MAGIC_BYTES, VERSION}, huffman::tree::{deserialize_tree, serialize_tree, Node}, crypto::IV_LEN};
 use std::io::Read;
 
 #[derive(Debug, Clone)]
@@ -9,8 +9,9 @@ pub struct Headers {
     pub original_size: u64,
     pub original_file_name: String,
     pub compressed_size: u64,
+    pub payload_actual_size: u64,
     pub salt: [u8; 16],
-    pub iv: [u8; {crate::crypto::FIXED_IV_PART_LEN}],
+    pub iv: [u8; IV_LEN],
     pub tag: [u8; 16],
     pub padding_bits: u8,
     pub checksum: u32,
@@ -25,8 +26,9 @@ pub fn write_header(original_size: u64, checksum: u32, name: &str) -> Headers {
         original_size,
         original_file_name: name.to_string(),
         compressed_size: 0,
+        payload_actual_size: 0,
         salt: [0u8; 16], // Initialized to zeros
-        iv: [0u8; {crate::crypto::FIXED_IV_PART_LEN}],   // Initialized to zeros
+        iv: [0u8; IV_LEN],   // Initialized to zeros
         tag: [0u8; 16],  // Initialized to zeros
         padding_bits: 0,
         checksum,
@@ -55,8 +57,9 @@ impl Headers {
             original_size: 0,
             original_file_name: String::new(),
             compressed_size: 0,
+            payload_actual_size: 0,
             salt: [0u8; 16],
-            iv: [0u8; {crate::crypto::FIXED_IV_PART_LEN}],
+            iv: [0u8; IV_LEN],
             tag: [0u8; 16],
             padding_bits: 0,
             checksum: 0,
@@ -74,6 +77,7 @@ impl Headers {
         bytes.extend_from_slice(&(self.original_file_name.len() as u16).to_le_bytes());
         bytes.extend_from_slice(self.original_file_name.as_bytes());
         bytes.extend_from_slice(&self.compressed_size.to_le_bytes());
+        bytes.extend_from_slice(&self.payload_actual_size.to_le_bytes());
         bytes.extend_from_slice(&self.salt);
         bytes.extend_from_slice(&self.iv);
         bytes.extend_from_slice(&self.tag);
@@ -105,9 +109,10 @@ impl Headers {
         let original_file_name = String::from_utf8(name_bytes)?;
 
         let compressed_size = u64::from_le_bytes(Self::read_bytes::<R, 8>(reader)?);
+        let payload_actual_size = u64::from_le_bytes(Self::read_bytes::<R, 8>(reader)?);
 
         let salt = Self::read_bytes::<R, 16>(reader)?;
-        let iv = Self::read_bytes::<R, {crate::crypto::FIXED_IV_PART_LEN}>(reader)?;
+        let iv = Self::read_bytes::<R, IV_LEN>(reader)?;
         let tag = Self::read_bytes::<R, 16>(reader)?;
 
         let padding_bits = Self::read_bytes::<R, 1>(reader)?[0];
@@ -127,6 +132,7 @@ impl Headers {
            original_size,
            original_file_name,
            compressed_size,
+           payload_actual_size,
            salt,
            iv,
            tag,

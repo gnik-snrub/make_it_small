@@ -311,7 +311,6 @@ version = "1.0.0"
 dependencies = [
  "aes-gcm",
  "clap",
- "generic-array",
  "hmac",
  "pbkdf2",
  "rand",

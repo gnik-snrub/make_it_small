@@ -73,10 +73,11 @@ pub struct BitReader<R: Read> {
     buffer_len: usize,
     current_byte: u8,
     bit_pos: u8,
+    pub padding_bits: usize, // Still keep padding_bits to be able to pass it to BitReader::new
 }
 
 impl<R: Read> BitReader<R> {
-    pub fn new(_padding_bits: usize, reader: R) -> BitReader<R> {
+    pub fn new(padding_bits: usize, reader: R) -> BitReader<R> {
         BitReader {
             reader,
             buffer: [0; 4096],
@@ -84,6 +85,7 @@ impl<R: Read> BitReader<R> {
             buffer_len: 0,
             current_byte: 0,
             bit_pos: 8, // Set to 8 so the first read_byte attempt triggers a buffer read
+            padding_bits,
         }
     }
 

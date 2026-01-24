@@ -56,62 +56,59 @@ pub fn encode<R: Read + Seek, W: Write>(
     temp_payload_file.seek(SeekFrom::Start(0))?; // Rewind
 
     // --- Decide on final payload source and flags ---
-    if encrypt_password.is_none() {
-        // If Huffman encoding increased size or not effective, use raw storage
-        if huffman_encoded && actual_payload_size >= original_size {
-            flip_stored_raw(&mut header.flags);
-            header.padding_bits = 0;
-            header.compressed_size = original_size; // Raw size
-            
-            // Write header
-            writer.write_all(&header.clone().to_bytes())?;
-            // Stream original data directly
-            reader.seek(SeekFrom::Start(original_position))?;
-            std::io::copy(reader, writer)?; // Copy original raw data
-        } else {
-            // Huffman compressed data is better or no tree built (default to Huffman/raw if smaller)
-            header.padding_bits = actual_padding_bits;
-            header.compressed_size = actual_payload_size;
+    // Determine the size of the payload before encryption (Huffman compressed or raw)
+    let unencrypted_payload_size: u64;
+    let reader_for_payload: Box<dyn Read> = if huffman_encoded && actual_payload_size < original_size {
+        header.padding_bits = actual_padding_bits;
+        unencrypted_payload_size = actual_payload_size;
+        Box::new(temp_payload_file) // Use the temporary file with Huffman compressed data
+    } else {
+        flip_stored_raw(&mut header.flags);
+        header.padding_bits = 0;
+        unencrypted_payload_size = original_size;
+        reader.seek(SeekFrom::Start(original_position))?; // Rewind original reader
+        Box::new(reader.take(unencrypted_payload_size)) // Use original reader for raw data, limited to its size
+    };
+    header.payload_actual_size = unencrypted_payload_size; // Set the new header field
 
-            // Write header
-            writer.write_all(&header.clone().to_bytes())?;
-            // Stream compressed data from temp file
-            std::io::copy(&mut temp_payload_file, writer)?;
-        }
+    if encrypt_password.is_none() {
+        // If not encrypted, compressed_size is the same as unencrypted_payload_size
+        header.compressed_size = unencrypted_payload_size;
+        
+        // Write header
+        writer.write_all(&header.clone().to_bytes())?;
+
+        // Stream data to final writer
+        std::io::copy(&mut reader_for_payload.take(unencrypted_payload_size), writer)?;
     } else { // Encryption is present, use streaming encryption
         flip_encrypted(&mut header.flags);
         header.salt = crypto::generate_random_bytes::<{crypto::SALT_LEN}>();
-        header.iv = crypto::generate_random_bytes::<{crypto::FIXED_IV_PART_LEN}>(); // This will be our initial_nonce
+        header.iv = crypto::generate_random_bytes::<{crypto::IV_LEN}>();
 
         let key = crypto::derive_key(encrypt_password.unwrap().as_bytes(), &header.salt);
 
-        // Prepare the reader for crypto::encrypt_stream
-        // If Huffman compressed data is better, use temp_payload_file as input.
-        // Else, use original reader for raw data.
-        let mut reader_for_encryption: Box<dyn Read> = if huffman_encoded && actual_payload_size < original_size {
-            header.padding_bits = actual_padding_bits;
-            Box::new(temp_payload_file) // Use the temporary file with Huffman compressed data
-        } else {
-            flip_stored_raw(&mut header.flags);
-            header.padding_bits = 0;
-            reader.seek(SeekFrom::Start(original_position))?; // Rewind original reader
-            Box::new(reader.take(original_size)) // Use original reader for raw data (limited to original_size)
-        };
-        
-        // Write header first, before encrypted stream content
-        writer.write_all(&header.clone().to_bytes())?;
+        // Create a temporary file for the encrypted payload
+        let mut temp_encrypted_file = tempfile::tempfile()?;
 
         let encrypted_size = crypto::encrypt_stream(
-            &mut reader_for_encryption,
-            writer, // Write directly to the final writer
+            &mut reader_for_payload.take(unencrypted_payload_size), // Stream from the unencrypted payload source
+            &mut temp_encrypted_file, // Encrypt to the temporary file
             &key,
-            header.iv.as_ref(), // Use header.iv as initial_nonce_bytes
-            &[], // No AAD for now, but could be added if needed (e.g., filename)
-            chunk_size, // Pass the chunk size
+            &header.iv,
+            &[],
+            chunk_size,
         )?;
         
-        header.compressed_size = encrypted_size as u64; // Update compressed_size based on encrypted output
+        // Update header.compressed_size with the actual encrypted size
+        header.compressed_size = encrypted_size as u64;
         header.tag = [0u8; crypto::TAG_LEN]; // Zero out header.tag as integrity is per-chunk
+
+        // Write header to the final writer
+        writer.write_all(&header.clone().to_bytes())?;
+
+        // Rewind temporary encrypted file and copy its content to the final writer
+        temp_encrypted_file.seek(SeekFrom::Start(0))?;
+        std::io::copy(&mut temp_encrypted_file, writer)?;
     }
 
     Ok(EncodeInfo {

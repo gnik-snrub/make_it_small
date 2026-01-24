@@ -11,6 +11,5 @@ aes-gcm = { version = "0.10", features = ["std"] }
 pbkdf2 = "0.12"
 sha2 = "0.10"
 hmac = "0.12"
-generic-array = "0.14"
 typenum = "1.12"
 tempfile = "3.2.0"
