@@ -44,6 +44,13 @@ pub struct EncodeInfo {
 /// Maximum memory usage = `chunk_size` + ~50KB overhead. Uses temporary files for
 /// intermediate processing to avoid loading entire files into memory.
 ///
+/// # Performance Tips
+///
+/// For best performance with large files, use larger chunk sizes:
+/// - 1MB chunks: More memory usage, fewer I/O operations
+/// - 16MB chunks: Balanced performance for most systems
+/// - 64MB chunks: Better throughput on systems with ample RAM
+///
 /// # Examples
 ///
 /// ```rust
@@ -55,7 +62,9 @@ pub struct EncodeInfo {
 /// let mut reader = Cursor::new(input);
 /// let mut output = Cursor::new(Vec::new());
 ///
-/// let info = encode(&mut reader, "test.txt", None, &mut output, DEFAULT_CHUNK_SIZE)?;
+/// // For large files, consider using 64MB chunk size:
+/// let large_chunk_size = 64 * 1024 * 1024;
+/// let info = encode(&mut reader, "test.txt", None, &mut output, large_chunk_size)?;
 /// println!("Compressed {} bytes to {} bytes", info.original_size, info.compressed_size);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```

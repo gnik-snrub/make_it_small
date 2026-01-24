@@ -32,8 +32,9 @@ pub fn encrypt_stream<R: Read, W: Write>(
     let cipher = Aes256Gcm::new(key);
     let mut total_bytes_written = 0;
 
-    // Buffer for plaintext. Encrypted data is written back into this buffer.
-    let mut plaintext_buffer = vec![0u8; chunk_size];
+    // Optimized buffer for plaintext - avoid zero-initialization
+    let mut plaintext_buffer = Vec::with_capacity(chunk_size);
+    plaintext_buffer.resize(chunk_size, 0);
 
     // Extract fixed IV part (first 4 bytes) and initial counter value (last 8 bytes)
     let fixed_iv_part: [u8; 4] = initial_nonce[0..4].try_into().unwrap(); // Should not panic due to IV_LEN
@@ -42,8 +43,8 @@ pub fn encrypt_stream<R: Read, W: Write>(
     let mut current_nonce_value = u64::from_be_bytes(counter_bytes);
 
     loop {
-        // Read plaintext into the buffer
-        let bytes_read = reader.read(&mut plaintext_buffer[..])?;
+        // Read plaintext into buffer with capacity optimization
+        let bytes_read = reader.read(&mut plaintext_buffer)?;
         if bytes_read == 0 {
             break; // EOF
         }
@@ -90,10 +91,12 @@ pub fn decrypt_stream<R: Read, W: Write>(
     let cipher = Aes256Gcm::new(key);
     let mut total_bytes_written = 0;
 
-    // Buffer for decrypted plaintext.
-    let mut plaintext_buffer = vec![0u8; chunk_size];
-    // Temporary buffer to read encrypted chunk + tag
-    let mut ciphertext_read_buffer = vec![0u8; chunk_size + TAG_LEN];
+    // Optimized buffer for decrypted plaintext - pre-allocate capacity
+    let mut plaintext_buffer = Vec::with_capacity(chunk_size);
+    plaintext_buffer.resize(chunk_size, 0);
+    // Pre-allocated buffer for encrypted chunk + tag
+    let mut ciphertext_read_buffer = Vec::with_capacity(chunk_size + TAG_LEN);
+    ciphertext_read_buffer.resize(chunk_size + TAG_LEN, 0);
 
     // Extract fixed IV part (first 4 bytes) and initial counter value (last 8 bytes)
     let fixed_iv_part: [u8; 4] = initial_nonce[0..4].try_into().unwrap(); // Should not panic due to IV_LEN
