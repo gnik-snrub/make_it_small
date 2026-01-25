@@ -2,6 +2,7 @@
 name = "mismall" #short for "make it small"
 version = "2.0.0"
 edition = "2024"
+rust-version = "1.85.0"
 description = "Streaming Huffman compression library with AES-256-GCM encryption and archive support"
 license = "MIT"
 authors = ["Josiah <josiah@dev>"]
@@ -36,6 +37,13 @@ console = { version = "0.15", optional = true }
 # Optional error handling
 thiserror = { version = "1.0", optional = true }
 
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
 [[bin]]
 name = "mismall"
 required-features = ["cli"]
+
+[[bench]]
+name = "performance"
+harness = false
