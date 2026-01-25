@@ -5,8 +5,8 @@ edition = "2024"
 rust-version = "1.85.0"
 description = "Streaming Huffman compression library with AES-256-GCM encryption and archive support"
 license = "MIT"
-authors = ["Josiah <josiah@dev>"]
-repository = "https://github.com/username/mismall"
+authors = ["Josiah Morris"]
+repository = "https://github.com/gnik-snrub/make_it_small"
 keywords = ["compression", "huffman", "encryption", "archive", "streaming"]
 categories = ["compression", "cryptography"]
 

@@ -277,6 +277,37 @@ mismall extract-file project_archive.small src/main.rs main_backup.rs
 # List archive contents
 mismall list project_archive.small
 ```
-
 ## License
+
 MIT — do whatever you want, just don't claim you wrote it.
+
+---
+
+## 🔧 Legacy CLI (Version 1.0.0)
+
+The original hand-crafted CLI implementation remains available as legacy version.
+
+### Access Legacy CLI
+
+### Option A: Checkout Directly
+```bash
+git clone https://github.com/gnik-snrub/make_it_small.git
+cd make_it_small
+git checkout f44054c9c7dd4813a5cdd41bbe8da2933409caa7
+cargo install --path .
+```
+
+### Option B: Version Pinning
+```bash
+cargo install mismall --locked --git https://github.com/gnik-snrub/make_it_small.git --branch main
+```
+
+---
+
+## Development History
+
+- **Original Implementation**: Hand-crafted CLI by Josiah Morris (up to commit f44054c)
+- **Library Transformation**: AI-assisted development (OpenAI/opencode) transforming CLI into production-ready library
+- **Current State**: Both versions accessible, library as primary focus
+
+The transformation preserved all original concepts while adding comprehensive library capabilities.
