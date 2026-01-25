@@ -302,6 +302,22 @@ cargo install --path .
 cargo install mismall --locked --git https://github.com/gnik-snrub/make_it_small.git --branch main
 ```
 
+### Option C: Use legacy-cli Branch
+```bash
+cargo install mismall --locked --git https://github.com/gnik-snrub/make_it_small.git --branch legacy-cli
+```
+
+## Repository Structure
+
+**Main Branch**: Shows original hand-crafted CLI work (commit f44054c)
+**AI Branch**: Modern library transformation (ai-library-transformation)  
+**Cargo Integration**: Points to AI branch automatically via Cargo.toml
+
+This means:
+- **GitHub visitors** see your original CLI work first
+- **Cargo users** get the modern library automatically
+- **Legacy access** remains available through branches/commits
+
 ---
 
 ## Development History
