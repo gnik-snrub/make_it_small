@@ -274,9 +274,9 @@ pub trait ErrorExt<T> {
     /// # Example
     ///
     /// ```rust
-    /// use mismall::error::context::ErrorContext;
+    /// use mismall::error::context::{ErrorContext, ErrorExt};
     ///
-    /// let error = std::io::Error::new(...);
+    /// let error = std::io::Error::new(std::io::ErrorKind::Other, "test error");
     /// let enhanced_error = error.with_context(ErrorContext::new("read_file"));
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -295,9 +295,9 @@ pub trait ErrorExt<T> {
     /// # Example
     ///
     /// ```rust
-    /// use mismall::error::context::{ErrorContext, Suggestion};
+    /// use mismall::error::context::{ErrorContext, Suggestion, ErrorExt};
     ///
-    /// let error = std::io::Error::new(...);
+    /// let error = std::io::Error::new(std::io::ErrorKind::Other, "test error");
     /// let suggestion = Suggestion::new("Try again", "Temporary network issue");
     /// let enhanced_error = error.with_suggestion(suggestion);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -333,7 +333,7 @@ impl<T> EnhancedError<T> {
     /// ```rust
     /// use mismall::error::context::EnhancedError;
     ///
-    /// let io_error = std::io::Error::new(...);
+    /// let io_error = std::io::Error::new(std::io::ErrorKind::Other, "test error");
     /// let enhanced = EnhancedError::new(io_error);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -357,7 +357,7 @@ impl<T> EnhancedError<T> {
     /// ```rust
     /// use mismall::error::context::{EnhancedError, ErrorContext};
     ///
-    /// let io_error = std::io::Error::new(...);
+    /// let io_error = std::io::Error::new(std::io::ErrorKind::Other, "test error");
     /// let context = ErrorContext::new("compress_file")
     ///     .with_file_path("data.txt");
     /// let enhanced = EnhancedError::new_with_context(io_error, context);
@@ -383,7 +383,7 @@ impl<T> EnhancedError<T> {
     /// ```rust
     /// use mismall::error::context::{EnhancedError, ErrorContext, Suggestion};
     ///
-    /// let io_error = std::io::Error::new(...);
+    /// let io_error = std::io::Error::new(std::io::ErrorKind::Other, "test error");
     /// let suggestion = Suggestion::new("Try again", "Temporary network issue");
     /// let enhanced = EnhancedError::new_with_suggestion(io_error, suggestion);
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -394,6 +394,17 @@ impl<T> EnhancedError<T> {
             context: None,
             suggestion: Some(suggestion),
         }
+    }
+}
+
+// Implement ErrorExt for std::io::Error
+impl ErrorExt<std::io::Error> for std::io::Error {
+    fn with_context(self, context: ErrorContext) -> EnhancedError<std::io::Error> {
+        EnhancedError::new_with_context(self, context)
+    }
+
+    fn with_suggestion(self, suggestion: Suggestion) -> EnhancedError<std::io::Error> {
+        EnhancedError::new_with_suggestion(self, suggestion)
     }
 }
 

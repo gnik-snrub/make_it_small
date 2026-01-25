@@ -10,6 +10,7 @@
 /// # Returns
 ///
 /// A `u32` representing the Adler-32 checksum.
+#[allow(dead_code)]
 pub fn adler32(data: &[u8]) -> u32 {
     const MOD_ADLER: u64 = 65521;
 
@@ -56,6 +57,7 @@ use std::io::{self, Read};
 /// A `Result` containing a tuple `(u32, u64)` on success, where the first element is the
 /// Adler-32 checksum and the second is the original size of the stream in bytes.
 /// Returns an `io::Error` if an error occurs during reading.
+#[allow(dead_code)]
 pub fn adler32_stream<R: Read>(reader: &mut R) -> io::Result<(u32, u64)> {
     let mut s1: u64 = 1;
     let mut s2: u64 = 0;

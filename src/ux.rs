@@ -1,11 +1,13 @@
 #[cfg(feature = "cli")]
-use console::style;
+// use console::style; // Not currently used
+#[allow(unused_imports)]
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
 
 /// File conflict resolution options
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 pub enum ConflictResolution {
     Overwrite,
     Cancel,
@@ -13,6 +15,7 @@ pub enum ConflictResolution {
 }
 
 /// Enhanced file conflict resolution with better UX
+#[allow(dead_code)]
 pub fn resolve_file_conflict(file_path: &Path) -> io::Result<Option<ConflictResolution>> {
     #[cfg(feature = "cli")]
     let _term = console::Term::stdout();
@@ -22,7 +25,7 @@ pub fn resolve_file_conflict(file_path: &Path) -> io::Result<Option<ConflictReso
     }
 
     // Get file info for better context
-    let metadata = fs::metadata(file_path)?;
+    let metadata = std::fs::metadata(file_path)?;
     let size = metadata.len();
     let modified = metadata
         .modified()

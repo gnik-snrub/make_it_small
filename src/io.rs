@@ -36,6 +36,7 @@ impl<W: Write> BitWriter<W> {
         Ok(())
     }
 
+    #[allow(dead_code)]
     pub fn flush(&mut self) -> std::io::Result<()> {
         for _ in 0..(8 - self.len) {
             self.buffer <<= 1;
@@ -74,6 +75,7 @@ pub struct BitReader<R: Read> {
     buffer_len: usize,
     current_byte: u8,
     bit_pos: u8,
+    #[allow(dead_code)]
     pub padding_bits: usize, // Still keep padding_bits to be able to pass it to BitReader::new
 }
 

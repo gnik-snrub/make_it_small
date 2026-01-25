@@ -1,7 +1,6 @@
 use std::fs::{self, File};
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use tempfile;
 
 use crate::flags;
 use crate::headers::Headers;

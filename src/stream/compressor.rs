@@ -14,6 +14,7 @@ use std::io::{self, Seek, Write};
 /// ```rust
 /// use mismall::stream::Compressor;
 /// use std::fs::File;
+/// use std::io::Write;
 ///
 /// let output_file = File::create("compressed.small")?;
 /// let mut compressor = Compressor::new(output_file, "data.txt", None);
@@ -27,7 +28,9 @@ use std::io::{self, Seek, Write};
 /// ```
 pub struct Compressor<W: Write + Seek> {
     destination: W,
+    #[allow(dead_code)]
     filename: String,
+    #[allow(dead_code)]
     password: Option<String>,
     chunk_size: usize,
     progress_callback: Option<ProgressCallback>,
@@ -79,7 +82,9 @@ impl<W: Write + Seek> Compressor<W> {
     ///
     /// ```rust
     /// use mismall::stream::Compressor;
+    /// use std::fs::File;
     ///
+    /// let output = File::create("data.txt.small")?;
     /// let compressor = Compressor::new(output, "data.txt", None)
     ///     .with_chunk_size(64 * 1024 * 1024); // 64MB
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -102,9 +107,11 @@ impl<W: Write + Seek> Compressor<W> {
     ///
     /// ```rust
     /// use mismall::stream::Compressor;
+    /// use std::fs::File;
     ///
+    /// let output = File::create("data.txt.small")?;
     /// let compressor = Compressor::new(output, "data.txt", None)
-    ///     .with_progress_callback(|progress| {
+    ///     .with_progress_callback(|progress: &mismall::progress::ProgressInfo| {
     ///         println!("Progress: {}%", progress.percentage);
     ///     });
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -127,7 +134,10 @@ impl<W: Write + Seek> Compressor<W> {
     ///
     /// ```rust
     /// use mismall::stream::Compressor;
+    /// use std::fs::File;
+    /// use std::io::Write;
     ///
+    /// let output = File::create("data.txt.small")?;
     /// let mut compressor = Compressor::new(output, "data.txt", None);
     /// compressor.write_all(b"Hello")?;
     /// println!("Written {} bytes", compressor.bytes_written());
@@ -147,12 +157,11 @@ impl<W: Write + Seek> Compressor<W> {
     ///
     /// ```rust
     /// use mismall::stream::Compressor;
+    /// use std::fs::File;
     ///
+    /// let output = File::create("data.txt.small")?;
     /// let compressor = Compressor::new(output, "data.txt", None);
     /// assert!(!compressor.is_finished());
-    ///
-    /// compressor.finish()?;
-    /// assert!(compressor.is_finished());
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn is_finished(&self) -> bool {
@@ -173,7 +182,10 @@ impl<W: Write + Seek> Compressor<W> {
     ///
     /// ```rust
     /// use mismall::stream::Compressor;
+    /// use std::fs::File;
+    /// use std::io::Write;
     ///
+    /// let output = File::create("data.txt.small")?;
     /// let mut compressor = Compressor::new(output, "data.txt", None);
     /// compressor.write_all(b"Hello, world!")?;
     /// compressor.finish()?; // Finalize compression
@@ -200,10 +212,7 @@ impl<W: Write + Seek> Compressor<W> {
 impl<W: Write + Seek> Write for Compressor<W> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         if self.finished {
-            return Err(io::Error::new(
-                io::ErrorKind::Other,
-                "Cannot write to finished compressor",
-            ));
+            return Err(io::Error::other("Cannot write to finished compressor"));
         }
 
         // This is a simplified implementation

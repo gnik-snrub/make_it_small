@@ -13,6 +13,7 @@ use std::io::{self, Read};
 /// ```rust
 /// use mismall::stream::Decompressor;
 /// use std::fs::File;
+/// use std::io::Read;
 ///
 /// let compressed_file = File::open("data.txt.small")?;
 /// let mut decompressor = Decompressor::new(compressed_file, None);
@@ -23,7 +24,9 @@ use std::io::{self, Read};
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub struct Decompressor<R: Read> {
+    #[allow(dead_code)]
     source: R,
+    #[allow(dead_code)]
     password: Option<String>,
     chunk_size: usize,
     progress_callback: Option<ProgressCallback>,
@@ -75,7 +78,9 @@ impl<R: Read> Decompressor<R> {
     ///
     /// ```rust
     /// use mismall::stream::Decompressor;
+    /// use std::fs::File;
     ///
+    /// let source = File::open("data.txt.small")?;
     /// let decompressor = Decompressor::new(source, None)
     ///     .with_chunk_size(64 * 1024 * 1024); // 64MB
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -98,9 +103,11 @@ impl<R: Read> Decompressor<R> {
     ///
     /// ```rust
     /// use mismall::stream::Decompressor;
+    /// use std::fs::File;
     ///
+    /// let source = File::open("data.txt.small")?;
     /// let decompressor = Decompressor::new(source, None)
-    ///     .with_progress_callback(|progress| {
+    ///     .with_progress_callback(|progress: &mismall::progress::ProgressInfo| {
     ///         println!("Progress: {}%", progress.percentage);
     ///     });
     /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -123,7 +130,10 @@ impl<R: Read> Decompressor<R> {
     ///
     /// ```rust
     /// use mismall::stream::Decompressor;
+    /// use std::fs::File;
+    /// use std::io::Read;
     ///
+    /// let source = File::open("data.txt.small")?;
     /// let mut decompressor = Decompressor::new(source, None);
     /// let mut buffer = [0u8; 100];
     /// decompressor.read(&mut buffer)?;
@@ -147,11 +157,13 @@ impl<R: Read> Decompressor<R> {
     ///
     /// ```rust
     /// use mismall::stream::Decompressor;
+    /// use std::fs::File;
+    /// use std::io::Read;
     ///
-    /// let decompressor = Decompressor::new(source, None);
+    /// let source = File::open("data.txt.small")?;
+    /// let mut decompressor = Decompressor::new(source, None);
     /// let mut buffer = [0u8; 10];
-    /// decompressor.read(&mut buffer)?; // First read triggers header parsing
-    ///
+    /// decompressor.read(&mut buffer)?;
     /// println!("Total size: {} bytes", decompressor.total_size());
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
@@ -169,9 +181,14 @@ impl<R: Read> Decompressor<R> {
     ///
     /// ```rust
     /// use mismall::stream::Decompressor;
+    /// use std::fs::File;
+    /// use std::io::Read;
     ///
-    /// let decompressor = Decompressor::new(source, None);
-    /// // ... read all data ...
+    /// let source = File::open("data.txt.small")?;
+    /// let mut decompressor = Decompressor::new(source, None);
+    /// assert!(!decompressor.is_finished());
+    /// let mut buffer = Vec::new();
+    /// decompressor.read_to_end(&mut buffer)?;
     /// assert!(decompressor.is_finished());
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```

@@ -55,8 +55,8 @@ pub struct EncodeInfo {
 ///
 /// ```rust
 /// use std::io::Cursor;
-/// use mismall::huffman::encoder::encode;
-/// use mismall::crypto::DEFAULT_CHUNK_SIZE;
+/// use mismall::compress::compress_stream;
+/// use mismall::DEFAULT_CHUNK_SIZE;
 ///
 /// let input = b"Hello, world!";
 /// let mut reader = Cursor::new(input);
@@ -64,7 +64,7 @@ pub struct EncodeInfo {
 ///
 /// // For large files, consider using 64MB chunk size:
 /// let large_chunk_size = 64 * 1024 * 1024;
-/// let info = encode(&mut reader, "test.txt", None, &mut output, large_chunk_size)?;
+/// let info = compress_stream(&mut reader, "test.txt", None, &mut output, large_chunk_size)?;
 /// println!("Compressed {} bytes to {} bytes", info.original_size, info.compressed_size);
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```

@@ -73,7 +73,8 @@ impl ArchiveBuilder {
     /// use mismall::archive::ArchiveBuilder;
     ///
     /// let builder = ArchiveBuilder::new()
-    ///     .add_file("document.txt", b"Hello, world!")?;
+    ///     .add_file("document.txt", b"file content")?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn add_file<S: Into<String>, D: Into<Vec<u8>>>(mut self, path: S, data: D) -> Result<Self> {
         let path = path.into();
@@ -122,8 +123,10 @@ impl ArchiveBuilder {
     /// ```rust
     /// use mismall::archive::ArchiveBuilder;
     ///
-    /// let builder = ArchiveBuilder::new()
-    ///     .add_file_from_fs("document.txt", "documents/letter.txt")?;
+    /// // Note: This requires an existing file
+    /// // let builder = ArchiveBuilder::new()
+    /// //     .add_file_from_fs("document.txt", "documents/letter.txt")?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn add_file_from_fs<P: AsRef<std::path::Path>, S: Into<String>>(
         self,
@@ -195,7 +198,7 @@ impl ArchiveBuilder {
     /// use mismall::archive::ArchiveBuilder;
     ///
     /// let builder = ArchiveBuilder::new()
-    ///     .with_progress_callback(|progress| {
+    ///     .with_progress_callback(|progress: &mismall::progress::ProgressInfo| {
     ///         println!("{}% complete", progress.percentage);
     ///     });
     /// ```

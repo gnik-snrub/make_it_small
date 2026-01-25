@@ -339,7 +339,8 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
             };
 
             // Keep header in scope for later use
-            let hdr = header;
+            #[allow(unused_variables)]
+            let hdr = header.clone();
 
             let decrypt_password_str: Option<String> = if let Some(p) = password {
                 Some(p)
@@ -445,6 +446,15 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("Error opening archive file '{}': {}", name_in, e);
                 Box::new(e) as Box<dyn std::error::Error>
             })?);
+
+            // Read headers first
+            let hdr = match Headers::from_reader(&mut input_file) {
+                Ok(headers) => headers,
+                Err(e) => {
+                    eprintln!("Error reading headers from '{}': {}", name_in, e);
+                    return Err(e);
+                }
+            };
 
             let output_path = match name_out {
                 Some(name) => PathBuf::from(name),

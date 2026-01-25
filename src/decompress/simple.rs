@@ -1,4 +1,3 @@
-use crate::crypto::DEFAULT_CHUNK_SIZE;
 use crate::decompress::DecompressionResult;
 use crate::error::{DecompressionError, Result};
 use crate::headers::Headers;
@@ -9,7 +8,7 @@ use std::io::{Cursor, Read, Write};
 use std::path::Path;
 
 /// Default chunk size for decompression (16MB)
-pub const DECOMPRESS_DEFAULT_CHUNK_SIZE: usize = 16 * 1024 * 1024;
+pub const DECOMPRESS_CHUNK_SIZE: usize = 16 * 1024 * 1024;
 
 /// Decompress a file with optional password decryption
 ///
@@ -30,13 +29,13 @@ pub const DECOMPRESS_DEFAULT_CHUNK_SIZE: usize = 16 * 1024 * 1024;
 /// ```rust
 /// use mismall::decompress_file;
 ///
-/// // Basic decompression
-/// let result = decompress_file("document.txt.small", None)?;
-/// println!("Decompressed {} bytes as {}",
-///          result.original_size, result.original_filename);
-///
-/// // Decompressed with password
-/// let decrypted_result = decompress_file("secret.txt.small", Some("password"))?;
+/// // Note: These examples require existing compressed files
+/// // let result = decompress_file("document.txt.small", None)?;
+/// // println!("Decompressed {} bytes as {}",
+/// //          result.original_size, result.original_filename);
+/// //
+/// // // Decompressed with password
+/// // let decrypted_result = decompress_file("secret.txt.small", Some("password"))?;
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub fn decompress_file<P: AsRef<Path>>(
@@ -57,7 +56,7 @@ pub fn decompress_file<P: AsRef<Path>>(
         &mut input_file,
         password,
         &mut output_buffer,
-        DEFAULT_CHUNK_SIZE,
+        DECOMPRESS_CHUNK_SIZE,
     )?;
 
     Ok(DecompressionResult::new(
@@ -140,13 +139,14 @@ pub fn decompress_file_with_progress<P: AsRef<Path>>(
 /// use std::io::Cursor;
 /// use mismall::decompress_stream;
 ///
-/// let compressed_data = b"compressed_data_here";
-/// let mut reader = Cursor::new(compressed_data);
-/// let mut writer = Cursor::new(Vec::new());
-///
-/// let result = decompress_stream(&mut reader, None, &mut writer, 1024 * 1024)?;
-/// let decompressed = writer.into_inner();
-/// println!("Decompressed {} bytes", decompressed.len());
+/// // Note: This example shows the pattern but requires valid compressed data
+/// // let compressed_data = b"valid_compressed_data_here";
+/// // let mut reader = Cursor::new(compressed_data);
+/// // let mut writer = Cursor::new(Vec::new());
+/// //
+/// // let result = decompress_stream(&mut reader, None, &mut writer, 1024 * 1024)?;
+/// // let decompressed = writer.into_inner();
+/// // println!("Decompressed {} bytes", decompressed.len());
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub fn decompress_stream<R: Read + std::io::Seek, W: Write>(

@@ -13,7 +13,7 @@ mod tests {
         let mut encoded_output_buffer = Cursor::new(Vec::new());
 
         // First encode the content
-        let encode_info = encode(
+        let _encode_info = encode(
             &mut input_reader,
             "test_file.txt",
             None,
@@ -58,7 +58,7 @@ mod tests {
         let password = "test_password_123";
 
         // Encode with encryption
-        let encode_info = encode(
+        let _encode_info = encode(
             &mut input_reader,
             "secret_file.txt",
             Some(password),
@@ -141,7 +141,7 @@ mod tests {
         let mut encoded_output_buffer = Cursor::new(Vec::new());
 
         // Encode (should store raw)
-        let encode_info = encode(
+        let _encode_info = encode(
             &mut input_reader,
             "binary_file.bin",
             None,
@@ -183,7 +183,7 @@ mod tests {
         let mut encoded_output_buffer = Cursor::new(Vec::new());
 
         // Encode empty file
-        let encode_info = encode(
+        let _encode_info = encode(
             &mut input_reader,
             "empty_file.txt",
             None,

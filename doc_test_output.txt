@@ -1,0 +1,1304 @@
+warning: unused import: `std::io::Read`
+ --> src/archive/builder.rs:5:5
+  |
+5 | use std::io::Read;
+  |     ^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: constant `DECOMPRESS_DEFAULT_CHUNK_SIZE` is never used
+  --> src/decompress/simple.rs:12:11
+   |
+12 | pub const DECOMPRESS_DEFAULT_CHUNK_SIZE: usize = 16 * 1024 * 1024;
+   |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: function `adler32` is never used
+  --> src/checksum.rs:13:8
+   |
+13 | pub fn adler32(data: &[u8]) -> u32 {
+   |        ^^^^^^^
+
+warning: function `adler32_stream` is never used
+  --> src/checksum.rs:59:8
+   |
+59 | pub fn adler32_stream<R: Read>(reader: &mut R) -> io::Result<(u32, u64)> {
+   |        ^^^^^^^^^^^^^^
+
+warning: constant `HAS_CHECKSUM` is never used
+ --> src/constants.rs:6:11
+  |
+6 | pub const HAS_CHECKSUM: u8 = 0b0000_0010; // TODO
+  |           ^^^^^^^^^^^^
+
+warning: constant `SALT_LENGTH` is never used
+  --> src/constants.rs:11:11
+   |
+11 | pub const SALT_LENGTH: usize = 16;
+   |           ^^^^^^^^^^^
+
+warning: constant `IV_LENGTH` is never used
+  --> src/constants.rs:12:11
+   |
+12 | pub const IV_LENGTH: usize = 16;
+   |           ^^^^^^^^^
+
+warning: function `flip_has_checksum` is never used
+  --> src/flags.rs:11:8
+   |
+11 | pub fn flip_has_checksum(flags: &mut u8) {
+   |        ^^^^^^^^^^^^^^^^^
+
+warning: function `has_checksum` is never used
+  --> src/flags.rs:15:8
+   |
+15 | pub fn has_checksum(flags: u8) -> bool {
+   |        ^^^^^^^^^^^^
+
+warning: function `flip_is_archive` is never used
+  --> src/flags.rs:27:8
+   |
+27 | pub fn flip_is_archive(flags: &mut u8) {
+   |        ^^^^^^^^^^^^^^^
+
+warning: method `flush` is never used
+  --> src/io.rs:39:12
+   |
+10 | impl<W: Write> BitWriter<W> {
+   | --------------------------- method in this implementation
+...
+39 |     pub fn flush(&mut self) -> std::io::Result<()> {
+   |            ^^^^^
+
+warning: field `padding_bits` is never read
+  --> src/io.rs:77:9
+   |
+70 | pub struct BitReader<R: Read> {
+   |            --------- field in this struct
+...
+77 |     pub padding_bits: usize, // Still keep padding_bits to be able to pass it to BitReader::new
+   |         ^^^^^^^^^^^^
+
+warning: enum `ConflictResolution` is never used
+ --> src/ux.rs:9:10
+  |
+9 | pub enum ConflictResolution {
+  |          ^^^^^^^^^^^^^^^^^^
+
+warning: function `resolve_file_conflict` is never used
+  --> src/ux.rs:16:8
+   |
+16 | pub fn resolve_file_conflict(file_path: &Path) -> io::Result<Option<ConflictResolution>> {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+warning: fields `filename` and `password` are never read
+  --> src/stream/compressor.rs:30:5
+   |
+28 | pub struct Compressor<W: Write + Seek> {
+   |            ---------- fields in this struct
+29 |     destination: W,
+30 |     filename: String,
+   |     ^^^^^^^^
+31 |     password: Option<String>,
+   |     ^^^^^^^^
+
+warning: fields `source` and `password` are never read
+  --> src/stream/decompressor.rs:26:5
+   |
+25 | pub struct Decompressor<R: Read> {
+   |            ------------ fields in this struct
+26 |     source: R,
+   |     ^^^^^^
+27 |     password: Option<String>,
+   |     ^^^^^^^^
+
+warning: `mismall` (lib) generated 16 warnings (run `cargo fix --lib -p mismall` to apply 1 suggestion)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.02s
+   Doc-tests mismall
+
+running 80 tests
+test src/archive/builder.rs - archive::builder::ArchiveBuilder::add_file_from_fs (line 126) ... FAILED
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor::new (line 42) ... ok
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor::with_password (line 65) ... ok
+test src/archive/builder.rs - archive::builder::ArchiveBuilder::with_chunk_size (line 179) ... ok
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor::with_chunk_size (line 84) ... ok
+test src/archive/builder.rs - archive::builder::ArchiveBuilder::with_password (line 160) ... ok
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor::list_contents (line 222) ... FAILED
+test src/archive/builder.rs - archive::builder::ArchiveBuilder::with_progress_callback (line 198) ... ok
+test src/archive/builder.rs - archive::builder::ArchiveBuilder::add_file (line 73) ... ok
+test src/archive/builder.rs - archive::builder::ArchiveBuilder::new (line 50) ... ok
+test src/archive/mod.rs - archive::calculate_archive_stats (line 216) ... FAILED
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor (line 14) ... FAILED
+test src/archive/builder.rs - archive::builder::ArchiveBuilder (line 14) ... ok
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor::with_progress_callback (line 103) ... ok
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor::with_output_dir (line 129) ... ok
+test src/archive/mod.rs - archive::is_archive (line 96) ... FAILED
+test src/archive/mod.rs - archive::is_encrypted (line 123) ... FAILED
+test src/archive/simple.rs - archive::simple::extract_file (line 152) ... FAILED
+test src/archive/simple.rs - archive::simple::extract_archive (line 297) ... FAILED
+test src/archive/simple.rs - archive::simple::list_archive_contents (line 22) ... FAILED
+test src/compress/builder.rs - compress::builder::CompressionBuilder::compress (line 193) ... FAILED
+test src/compress/builder.rs - compress::builder::CompressionBuilder (line 15) ... FAILED
+test src/archive/builder.rs - archive::builder::ArchiveBuilder::build (line 229) ... ok
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor::extract_file (line 188) ... FAILED
+test src/compress/builder.rs - compress::builder::CompressionBuilder::with_progress_callback (line 166) ... FAILED
+test src/archive/extractor.rs - archive::extractor::ArchiveExtractor::extract_all (line 151) ... FAILED
+test src/archive/mod.rs - archive::validate_archive_path (line 154) ... FAILED
+test src/compress/builder.rs - compress::builder::CompressionBuilder::with_password (line 94) ... ok
+test src/compress/builder.rs - compress::builder::CompressionBuilder::new (line 71) ... ok
+test src/error/context.rs - error::context::EnhancedError<T>::new (line 333) ... FAILED
+test src/compress/builder.rs - compress::builder::CompressionBuilder::with_chunk_size (line 122) ... FAILED
+test src/error/context.rs - error::context::EnhancedError<T>::new_with_context (line 357) ... FAILED
+test src/decompress/builder.rs - decompress::builder::DecompressionBuilder::new (line 46) ... ok
+test src/decompress/builder.rs - decompress::builder::DecompressionBuilder::decompress (line 180) ... FAILED
+test src/compress/builder.rs - compress::builder::CompressionBuilder::with_output_path (line 145) ... FAILED
+test src/error/context.rs - error::context::EnhancedError<T>::new_with_suggestion (line 383) ... FAILED
+test src/decompress/builder.rs - decompress::builder::DecompressionBuilder::with_output_path (line 149) ... ok
+test src/decompress/builder.rs - decompress::builder::DecompressionBuilder::with_chunk_size (line 97) ... ok
+test src/compress/simple.rs - compress::simple::compress_file (line 28) ... FAILED
+test src/decompress/builder.rs - decompress::builder::DecompressionBuilder (line 14) ... FAILED
+test src/decompress/builder.rs - decompress::builder::DecompressionBuilder::with_password (line 69) ... ok
+test src/decompress/builder.rs - decompress::builder::DecompressionBuilder::with_progress_callback (line 119) ... ok
+test src/decompress/simple.rs - decompress::simple::decompress_file (line 30) ... FAILED
+test src/error/context.rs - error::context::ErrorExt::with_context (line 276) ... FAILED
+test src/error/context.rs - error::context::ErrorExt::with_suggestion (line 297) ... FAILED
+test src/compress/simple.rs - compress::simple::compress_stream (line 99) ... ok
+test src/error.rs - error (line 9) ... ok
+test src/huffman/encoder.rs - huffman::encoder::encode (line 56) ... FAILED
+test src/lib.rs - (line 24) ... FAILED
+test src/decompress/simple.rs - decompress::simple::decompress_stream (line 139) ... FAILED
+test src/lib.rs - (line 83) ... FAILED
+test src/stream/compressor.rs - stream::compressor::Compressor (line 14) ... FAILED
+test src/lib.rs - (line 120) ... FAILED
+test src/error/context.rs - error::context::ErrorContext::new (line 43) ... ok
+test src/error/context.rs - error::context::ErrorContext::with_chunk_size (line 122) ... ok
+test src/stream/compressor.rs - stream::compressor::Compressor<W>::bytes_written (line 128) ... FAILED
+test src/stream/compressor.rs - stream::compressor::Compressor<W>::finish (line 174) ... FAILED
+test src/stream/compressor.rs - stream::compressor::Compressor<W>::is_finished (line 148) ... FAILED
+test src/error/context.rs - error::context::Suggestion::with_code (line 218) ... ok
+test src/error/context.rs - error::context::ErrorContext::with_custom_context (line 146) ... ok
+test src/error/context.rs - error::context::ErrorContext::with_file_path (line 74) ... ok
+test src/error/context.rs - error::context::Suggestion::new (line 188) ... ok
+test src/stream/decompressor.rs - stream::decompressor::Decompressor (line 13) ... FAILED
+test src/stream/compressor.rs - stream::compressor::Compressor<W>::with_chunk_size (line 80) ... FAILED
+test src/stream/compressor.rs - stream::compressor::Compressor<W>::with_progress_callback (line 103) ... FAILED
+test src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::bytes_read (line 124) ... FAILED
+test src/error/context.rs - error::context::Suggestion::with_documentation (line 244) ... ok
+test src/error/context.rs - error::context::ErrorContext::with_position (line 98) ... ok
+test src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::total_size (line 148) ... FAILED
+test src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::is_finished (line 170) ... FAILED
+test src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::with_chunk_size (line 76) ... FAILED
+test src/lib.rs - (line 101) ... FAILED
+test src/stream/mod.rs - stream::stream_reader (line 27) ... FAILED
+test src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::with_progress_callback (line 99) ... FAILED
+test src/stream/mod.rs - stream::stream_writer (line 56) ... FAILED
+test src/lib.rs - (line 10) ... FAILED
+test src/lib.rs - (line 40) ... FAILED
+test src/lib.rs - (line 68) ... FAILED
+test src/stream/compressor.rs - stream::compressor::Compressor<W>::new (line 49) ... ok
+test src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::new (line 45) ... FAILED
+
+failures:
+
+---- src/archive/builder.rs - archive::builder::ArchiveBuilder::add_file_from_fs (line 126) stdout ----
+error[E0277]: the `?` operator can only be used in a function that returns `Result` or `Option` (or another type that implements `FromResidual`)
+ --> src/archive/builder.rs:131:62
+  |
+4 | fn main() { #[allow(non_snake_case)] fn _doctest_main_src_archive_builder_rs_126_0() {
+  |                                      ----------------------------------------------- this function should return `Result` or `Option` to accept `?`
+...
+8 |     .add_file_from_fs("document.txt", "documents/letter.txt")?;
+  |                                                              ^ cannot use the `?` operator in a function that returns `()`
+  |
+help: consider adding return type
+  |
+4 ~ fn main() { #[allow(non_snake_case)] fn _doctest_main_src_archive_builder_rs_126_0() -> Result<(), Box<dyn std::error::Error>> {
+5 | use mismall::archive::ArchiveBuilder;
+...
+8 |     .add_file_from_fs("document.txt", "documents/letter.txt")?;
+9 +     Ok(())
+  |
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0277`.
+Couldn't compile the test.
+---- src/archive/extractor.rs - archive::extractor::ArchiveExtractor::list_contents (line 222) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/archive/extractor.rs:15:50:
+called `Result::unwrap()` on an `Err` value: Io { error: Os { code: 2, kind: NotFound, message: "No such file or directory" }, context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/archive/mod.rs - archive::calculate_archive_stats (line 216) stdout ----
+error[E0308]: mismatched types
+  --> src/archive/mod.rs:221:19
+   |
+8  |     FileInfo::new("file1.txt", 1000, 750, false),
+   |     ------------- ^^^^^^^^^^^- help: try using a conversion method: `.to_string()`
+   |     |             |
+   |     |             expected `String`, found `&str`
+   |     arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> /home/josiah/Work/coding/ai-playground/make_it_small/src/archive/mod.rs:31:12
+   |
+31 |     pub fn new(path: String, original_size: u64, compressed_size: u64, encrypted: bool) -> Self {
+   |            ^^^
+
+error[E0308]: mismatched types
+  --> src/archive/mod.rs:222:19
+   |
+9  |     FileInfo::new("file2.txt", 2000, 1600, true),
+   |     ------------- ^^^^^^^^^^^- help: try using a conversion method: `.to_string()`
+   |     |             |
+   |     |             expected `String`, found `&str`
+   |     arguments to this function are incorrect
+   |
+note: associated function defined here
+  --> /home/josiah/Work/coding/ai-playground/make_it_small/src/archive/mod.rs:31:12
+   |
+31 |     pub fn new(path: String, original_size: u64, compressed_size: u64, encrypted: bool) -> Self {
+   |            ^^^
+
+error[E0599]: no method named `overall_savings_percentage` found for struct `ArchiveInfo` in the current scope
+  --> src/archive/mod.rs:225:72
+   |
+12 | println!("Archive: {} files, {}% compression", stats.file_count, stats.overall_savings_percentage());
+   |                                                                        ^^^^^^^^^^^^^^^^^^^^^^^^^^-- help: remove the arguments
+   |                                                                        |
+   |                                                                        field, not a method
+
+error: aborting due to 3 previous errors
+
+Some errors have detailed explanations: E0308, E0599.
+For more information about an error, try `rustc --explain E0308`.
+Couldn't compile the test.
+---- src/archive/extractor.rs - archive::extractor::ArchiveExtractor (line 14) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/archive/extractor.rs:14:49:
+called `Result::unwrap()` on an `Err` value: Io { error: Os { code: 2, kind: NotFound, message: "No such file or directory" }, context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/archive/mod.rs - archive::is_archive (line 96) stdout ----
+error[E0423]: expected value, found macro `file`
+ --> src/archive/mod.rs:101:41
+  |
+8 | let headers = Headers::from_reader(&mut file)?;
+  |                                         ^^^^ not a value
+
+error[E0603]: module `headers` is private
+   --> src/archive/mod.rs:99:14
+    |
+6   | use mismall::headers::Headers;
+    |              ^^^^^^^ private module
+    |
+note: the module `headers` is defined here
+   --> /home/josiah/Work/coding/ai-playground/make_it_small/src/lib.rs:273:1
+    |
+273 | mod headers;
+    | ^^^^^^^^^^^
+
+error: aborting due to 2 previous errors
+
+Some errors have detailed explanations: E0423, E0603.
+For more information about an error, try `rustc --explain E0423`.
+Couldn't compile the test.
+---- src/archive/mod.rs - archive::is_encrypted (line 123) stdout ----
+error[E0423]: expected value, found macro `file`
+ --> src/archive/mod.rs:128:41
+  |
+8 | let headers = Headers::from_reader(&mut file)?;
+  |                                         ^^^^ not a value
+
+error[E0603]: module `headers` is private
+   --> src/archive/mod.rs:126:14
+    |
+6   | use mismall::headers::Headers;
+    |              ^^^^^^^ private module
+    |
+note: the module `headers` is defined here
+   --> /home/josiah/Work/coding/ai-playground/make_it_small/src/lib.rs:273:1
+    |
+273 | mod headers;
+    | ^^^^^^^^^^^
+
+error: aborting due to 2 previous errors
+
+Some errors have detailed explanations: E0423, E0603.
+For more information about an error, try `rustc --explain E0423`.
+Couldn't compile the test.
+---- src/archive/simple.rs - archive::simple::extract_file (line 152) stdout ----
+error[E0308]: arguments to this function are incorrect
+   --> src/archive/simple.rs:156:1
+    |
+7   | extract_file("backup.small", "documents/contract.pdf", "contract.pdf", None)?;
+    | ^^^^^^^^^^^^ --------------                            -------------- expected `&Path`, found `&str`
+    |              |
+    |              expected `&Path`, found `&str`
+    |
+    = note: expected reference `&Path`
+               found reference `&'static str`
+    = note: expected reference `&Path`
+               found reference `&'static str`
+note: function defined here
+   --> /home/josiah/Work/coding/ai-playground/make_it_small/src/archive/simple.rs:159:8
+    |
+159 | pub fn extract_file(
+    |        ^^^^^^^^^^^^
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0308`.
+Couldn't compile the test.
+---- src/archive/simple.rs - archive::simple::extract_archive (line 297) stdout ----
+error[E0308]: arguments to this function are incorrect
+   --> src/archive/simple.rs:301:12
+    |
+7   | let info = extract_archive("backup.small", "extracted/", None)?;
+    |            ^^^^^^^^^^^^^^^ --------------  ------------ expected `&Path`, found `&str`
+    |                            |
+    |                            expected `&Path`, found `&str`
+    |
+    = note: expected reference `&Path`
+               found reference `&'static str`
+    = note: expected reference `&Path`
+               found reference `&'static str`
+note: function defined here
+   --> /home/josiah/Work/coding/ai-playground/make_it_small/src/archive/simple.rs:304:8
+    |
+304 | pub fn extract_archive(
+    |        ^^^^^^^^^^^^^^^
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0308`.
+Couldn't compile the test.
+---- src/archive/simple.rs - archive::simple::list_archive_contents (line 22) stdout ----
+error[E0308]: mismatched types
+  --> src/archive/simple.rs:26:43
+   |
+7  | let (info, files) = list_archive_contents("backup.small")?;
+   |                     --------------------- ^^^^^^^^^^^^^^ expected `&Path`, found `&str`
+   |                     |
+   |                     arguments to this function are incorrect
+   |
+   = note: expected reference `&Path`
+              found reference `&'static str`
+note: function defined here
+  --> /home/josiah/Work/coding/ai-playground/make_it_small/src/archive/simple.rs:33:8
+   |
+33 | pub fn list_archive_contents(archive_path: &Path) -> Result<(ArchiveInfo, Vec<FileInfo>)> {
+   |        ^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0308`.
+Couldn't compile the test.
+---- src/compress/builder.rs - compress::builder::CompressionBuilder::compress (line 193) stdout ----
+error[E0282]: type annotations needed
+  --> src/compress/builder.rs:200:30
+   |
+10 |     .with_progress_callback(|progress| {
+   |                              ^^^^^^^^
+11 |         println!("{}% complete", progress.percentage);
+   |                                  -------- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type
+   |
+10 |     .with_progress_callback(|progress: /* Type */| {
+   |                                      ++++++++++++
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0282`.
+Couldn't compile the test.
+---- src/compress/builder.rs - compress::builder::CompressionBuilder (line 15) stdout ----
+error[E0282]: type annotations needed
+  --> src/compress/builder.rs:22:30
+   |
+10 |     .with_progress_callback(|progress| {
+   |                              ^^^^^^^^
+11 |         println!("Progress: {}%", progress.percentage);
+   |                                   -------- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type
+   |
+10 |     .with_progress_callback(|progress: /* Type */| {
+   |                                      ++++++++++++
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0282`.
+Couldn't compile the test.
+---- src/archive/extractor.rs - archive::extractor::ArchiveExtractor::extract_file (line 188) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/archive/extractor.rs:12:50:
+called `Result::unwrap()` on an `Err` value: Io { error: Os { code: 2, kind: NotFound, message: "No such file or directory" }, context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/compress/builder.rs - compress::builder::CompressionBuilder::with_progress_callback (line 166) stdout ----
+error[E0282]: type annotations needed
+ --> src/compress/builder.rs:171:30
+  |
+8 |     .with_progress_callback(|progress| {
+  |                              ^^^^^^^^
+9 |         println!("Progress: {:.1}%", progress.percentage);
+  |                                      -------- type must be known at this point
+  |
+help: consider giving this closure parameter an explicit type
+  |
+8 |     .with_progress_callback(|progress: /* Type */| {
+  |                                      ++++++++++++
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0282`.
+Couldn't compile the test.
+---- src/archive/extractor.rs - archive::extractor::ArchiveExtractor::extract_all (line 151) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/archive/extractor.rs:12:50:
+called `Result::unwrap()` on an `Err` value: Io { error: Os { code: 2, kind: NotFound, message: "No such file or directory" }, context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/archive/mod.rs - archive::validate_archive_path (line 154) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/archive/mod.rs:10:44:
+called `Result::unwrap()` on an `Err` value: InvalidInput { message: "Archive file does not exist: backup.small", context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/error/context.rs - error::context::EnhancedError<T>::new (line 333) stdout ----
+error: unexpected token: `...`
+ --> src/error/context.rs:337:36
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                                    ^^^
+  |
+help: use `..` for an exclusive range
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..);
+  |
+help: or `..=` for an inclusive range
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..=);
+  |
+
+error[E0586]: inclusive range with no end
+ --> src/error/context.rs:337:36
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                                    ^^^
+  |
+  = note: inclusive ranges must be bounded at the end (`..=b` or `a..=b`)
+help: use `..` instead
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..);
+  |
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+ --> src/error/context.rs:337:16
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                ^^^^^^^^^^^^^^^^^^^----- argument #2 is missing
+  |
+note: associated function defined here
+ --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/error.rs:568:12
+help: provide the argument
+  |
+7 | let io_error = std::io::Error::new(..., /* error */);
+  |                                       +++++++++++++
+
+error: aborting due to 3 previous errors
+
+Some errors have detailed explanations: E0061, E0586.
+For more information about an error, try `rustc --explain E0061`.
+Couldn't compile the test.
+---- src/compress/builder.rs - compress::builder::CompressionBuilder::with_chunk_size (line 122) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/compress/builder.rs:13:49:
+called `Result::unwrap()` on an `Err` value: Compression { error: InputRead("Failed to read file metadata: No such file or directory (os error 2)"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/error/context.rs - error::context::EnhancedError<T>::new_with_context (line 357) stdout ----
+error: unexpected token: `...`
+ --> src/error/context.rs:361:36
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                                    ^^^
+  |
+help: use `..` for an exclusive range
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..);
+  |
+help: or `..=` for an inclusive range
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..=);
+  |
+
+error[E0586]: inclusive range with no end
+ --> src/error/context.rs:361:36
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                                    ^^^
+  |
+  = note: inclusive ranges must be bounded at the end (`..=b` or `a..=b`)
+help: use `..` instead
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..);
+  |
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+ --> src/error/context.rs:361:16
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                ^^^^^^^^^^^^^^^^^^^----- argument #2 is missing
+  |
+note: associated function defined here
+ --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/error.rs:568:12
+help: provide the argument
+  |
+7 | let io_error = std::io::Error::new(..., /* error */);
+  |                                       +++++++++++++
+
+error: aborting due to 3 previous errors
+
+Some errors have detailed explanations: E0061, E0586.
+For more information about an error, try `rustc --explain E0061`.
+Couldn't compile the test.
+---- src/decompress/builder.rs - decompress::builder::DecompressionBuilder::decompress (line 180) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/decompress/builder.rs:13:51:
+called `Result::unwrap()` on an `Err` value: Decompression { error: InputRead("Failed to read file metadata: No such file or directory (os error 2)"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/compress/builder.rs - compress::builder::CompressionBuilder::with_output_path (line 145) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/compress/builder.rs:11:49:
+called `Result::unwrap()` on an `Err` value: Compression { error: InputRead("Failed to read file metadata: No such file or directory (os error 2)"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/error/context.rs - error::context::EnhancedError<T>::new_with_suggestion (line 383) stdout ----
+error: unexpected token: `...`
+ --> src/error/context.rs:387:36
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                                    ^^^
+  |
+help: use `..` for an exclusive range
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..);
+  |
+help: or `..=` for an inclusive range
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..=);
+  |
+
+error[E0586]: inclusive range with no end
+ --> src/error/context.rs:387:36
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                                    ^^^
+  |
+  = note: inclusive ranges must be bounded at the end (`..=b` or `a..=b`)
+help: use `..` instead
+  |
+7 - let io_error = std::io::Error::new(...);
+7 + let io_error = std::io::Error::new(..);
+  |
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+ --> src/error/context.rs:387:16
+  |
+7 | let io_error = std::io::Error::new(...);
+  |                ^^^^^^^^^^^^^^^^^^^----- argument #2 is missing
+  |
+note: associated function defined here
+ --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/error.rs:568:12
+help: provide the argument
+  |
+7 | let io_error = std::io::Error::new(..., /* error */);
+  |                                       +++++++++++++
+
+error: aborting due to 3 previous errors
+
+Some errors have detailed explanations: E0061, E0586.
+For more information about an error, try `rustc --explain E0061`.
+Couldn't compile the test.
+---- src/compress/simple.rs - compress::simple::compress_file (line 28) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/compress/simple.rs:15:47:
+called `Result::unwrap()` on an `Err` value: Compression { error: InputRead("Failed to open input file: No such file or directory (os error 2)"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/decompress/builder.rs - decompress::builder::DecompressionBuilder (line 14) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/decompress/builder.rs:18:50:
+called `Result::unwrap()` on an `Err` value: Decompression { error: InputRead("Failed to read file metadata: No such file or directory (os error 2)"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/decompress/simple.rs - decompress::simple::decompress_file (line 30) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/decompress/simple.rs:15:49:
+called `Result::unwrap()` on an `Err` value: Decompression { error: InputRead("Failed to open input file: No such file or directory (os error 2)"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/error/context.rs - error::context::ErrorExt::with_context (line 276) stdout ----
+error: unexpected token: `...`
+ --> src/error/context.rs:280:33
+  |
+7 | let error = std::io::Error::new(...);
+  |                                 ^^^
+  |
+help: use `..` for an exclusive range
+  |
+7 - let error = std::io::Error::new(...);
+7 + let error = std::io::Error::new(..);
+  |
+help: or `..=` for an inclusive range
+  |
+7 - let error = std::io::Error::new(...);
+7 + let error = std::io::Error::new(..=);
+  |
+
+error[E0586]: inclusive range with no end
+ --> src/error/context.rs:280:33
+  |
+7 | let error = std::io::Error::new(...);
+  |                                 ^^^
+  |
+  = note: inclusive ranges must be bounded at the end (`..=b` or `a..=b`)
+help: use `..` instead
+  |
+7 - let error = std::io::Error::new(...);
+7 + let error = std::io::Error::new(..);
+  |
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+ --> src/error/context.rs:280:13
+  |
+7 | let error = std::io::Error::new(...);
+  |             ^^^^^^^^^^^^^^^^^^^----- argument #2 is missing
+  |
+note: associated function defined here
+ --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/error.rs:568:12
+help: provide the argument
+  |
+7 | let error = std::io::Error::new(..., /* error */);
+  |                                    +++++++++++++
+
+error[E0599]: no method named `with_context` found for struct `std::io::Error` in the current scope
+ --> src/error/context.rs:281:28
+  |
+8 | let enhanced_error = error.with_context(ErrorContext::new("read_file"));
+  |                            ^^^^^^^^^^^^ method not found in `std::io::Error`
+
+error: aborting due to 4 previous errors
+
+Some errors have detailed explanations: E0061, E0586, E0599.
+For more information about an error, try `rustc --explain E0061`.
+Couldn't compile the test.
+---- src/error/context.rs - error::context::ErrorExt::with_suggestion (line 297) stdout ----
+error: unexpected token: `...`
+ --> src/error/context.rs:301:33
+  |
+7 | let error = std::io::Error::new(...);
+  |                                 ^^^
+  |
+help: use `..` for an exclusive range
+  |
+7 - let error = std::io::Error::new(...);
+7 + let error = std::io::Error::new(..);
+  |
+help: or `..=` for an inclusive range
+  |
+7 - let error = std::io::Error::new(...);
+7 + let error = std::io::Error::new(..=);
+  |
+
+error[E0586]: inclusive range with no end
+ --> src/error/context.rs:301:33
+  |
+7 | let error = std::io::Error::new(...);
+  |                                 ^^^
+  |
+  = note: inclusive ranges must be bounded at the end (`..=b` or `a..=b`)
+help: use `..` instead
+  |
+7 - let error = std::io::Error::new(...);
+7 + let error = std::io::Error::new(..);
+  |
+
+error[E0061]: this function takes 2 arguments but 1 argument was supplied
+ --> src/error/context.rs:301:13
+  |
+7 | let error = std::io::Error::new(...);
+  |             ^^^^^^^^^^^^^^^^^^^----- argument #2 is missing
+  |
+note: associated function defined here
+ --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/error.rs:568:12
+help: provide the argument
+  |
+7 | let error = std::io::Error::new(..., /* error */);
+  |                                    +++++++++++++
+
+error[E0599]: no method named `with_suggestion` found for struct `std::io::Error` in the current scope
+ --> src/error/context.rs:303:28
+  |
+9 | let enhanced_error = error.with_suggestion(suggestion);
+  |                            ^^^^^^^^^^^^^^^ method not found in `std::io::Error`
+
+error: aborting due to 4 previous errors
+
+Some errors have detailed explanations: E0061, E0586, E0599.
+For more information about an error, try `rustc --explain E0061`.
+Couldn't compile the test.
+---- src/huffman/encoder.rs - huffman::encoder::encode (line 56) stdout ----
+error[E0603]: module `huffman` is private
+   --> src/huffman/encoder.rs:59:14
+    |
+6   | use mismall::huffman::encoder::encode;
+    |              ^^^^^^^  ------- module `encoder` is not publicly re-exported
+    |              |
+    |              private module
+    |
+note: the module `huffman` is defined here
+   --> /home/josiah/Work/coding/ai-playground/make_it_small/src/lib.rs:274:1
+    |
+274 | mod huffman;
+    | ^^^^^^^^^^^
+
+error[E0603]: module `crypto` is private
+   --> src/huffman/encoder.rs:60:14
+    |
+7   | use mismall::crypto::DEFAULT_CHUNK_SIZE;
+    |              ^^^^^^ private module
+    |
+note: the module `crypto` is defined here
+   --> /home/josiah/Work/coding/ai-playground/make_it_small/src/lib.rs:271:1
+    |
+271 | mod crypto;
+    | ^^^^^^^^^^
+
+error: aborting due to 2 previous errors
+
+For more information about this error, try `rustc --explain E0603`.
+Couldn't compile the test.
+---- src/lib.rs - (line 24) stdout ----
+error[E0282]: type annotations needed
+  --> src/lib.rs:31:30
+   |
+10 |     .with_progress_callback(|progress| {
+   |                              ^^^^^^^^
+11 |         println!("Progress: {}%", progress.percentage);
+   |                                   -------- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type
+   |
+10 |     .with_progress_callback(|progress: /* Type */| {
+   |                                      ++++++++++++
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0282`.
+Couldn't compile the test.
+---- src/decompress/simple.rs - decompress::simple::decompress_stream (line 139) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/decompress/simple.rs:16:50:
+called `Result::unwrap()` on an `Err` value: Decompression { error: InvalidFormat("Failed to read headers: failed to fill whole buffer"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/lib.rs - (line 83) stdout ----
+error[E0282]: type annotations needed
+  --> src/lib.rs:90:30
+   |
+10 |     .with_progress_callback(|progress| {
+   |                              ^^^^^^^^
+11 |         println!("Progress: {}%", progress.percentage);
+   |                                   -------- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type
+   |
+10 |     .with_progress_callback(|progress: /* Type */| {
+   |                                      ++++++++++++
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0282`.
+Couldn't compile the test.
+---- src/stream/compressor.rs - stream::compressor::Compressor (line 14) stdout ----
+error[E0599]: no method named `write_all` found for struct `Compressor` in the current scope
+  --> src/stream/compressor.rs:22:12
+   |
+11 | compressor.write_all(b"Hello, ")?;
+   |            ^^^^^^^^^
+  --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/mod.rs:1835:8
+   |
+   = note: the method is available for `Compressor<File>` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Write` which provides `write_all` is implemented but not in scope; perhaps you want to import it
+   |
+2  + use std::io::Write;
+   |
+help: there is a method `write` with a similar name
+   |
+11 - compressor.write_all(b"Hello, ")?;
+11 + compressor.write(b"Hello, ")?;
+   |
+
+error[E0599]: no method named `write_all` found for struct `Compressor` in the current scope
+  --> src/stream/compressor.rs:23:12
+   |
+12 | compressor.write_all(b"world!")?;
+   |            ^^^^^^^^^
+  --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/mod.rs:1835:8
+   |
+   = note: the method is available for `Compressor<File>` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Write` which provides `write_all` is implemented but not in scope; perhaps you want to import it
+   |
+2  + use std::io::Write;
+   |
+help: there is a method `write` with a similar name
+   |
+12 - compressor.write_all(b"world!")?;
+12 + compressor.write(b"world!")?;
+   |
+
+error: aborting due to 2 previous errors
+
+For more information about this error, try `rustc --explain E0599`.
+Couldn't compile the test.
+---- src/lib.rs - (line 120) stdout ----
+error[E0599]: no method named `write_all` found for opaque type `impl std::io::Write` in the current scope
+  --> src/lib.rs:128:12
+   |
+11 | compressor.write_all(b"Hello, ")?;
+   |            ^^^^^^^^^
+  --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/mod.rs:1835:8
+   |
+   = note: the method is available for `impl std::io::Write` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Write` which provides `write_all` is implemented but not in scope; perhaps you want to import it
+   |
+2  + use std::io::Write;
+   |
+help: there is a method `write` with a similar name
+   |
+11 - compressor.write_all(b"Hello, ")?;
+11 + compressor.write(b"Hello, ")?;
+   |
+
+error[E0599]: no method named `write_all` found for opaque type `impl std::io::Write` in the current scope
+  --> src/lib.rs:129:12
+   |
+12 | compressor.write_all(b"world!")?;
+   |            ^^^^^^^^^
+  --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/mod.rs:1835:8
+   |
+   = note: the method is available for `impl std::io::Write` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Write` which provides `write_all` is implemented but not in scope; perhaps you want to import it
+   |
+2  + use std::io::Write;
+   |
+help: there is a method `write` with a similar name
+   |
+12 - compressor.write_all(b"world!")?;
+12 + compressor.write(b"world!")?;
+   |
+
+error[E0599]: no method named `finish` found for opaque type `impl std::io::Write` in the current scope
+  --> src/lib.rs:130:12
+   |
+13 | compressor.finish()?;
+   |            ^^^^^^ method not found in `impl std::io::Write`
+
+error[E0599]: no method named `read_to_string` found for opaque type `impl std::io::Read` in the current scope
+  --> src/lib.rs:136:8
+   |
+19 | reader.read_to_string(&mut buffer)?;
+   |        ^^^^^^^^^^^^^^
+  --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/mod.rs:991:8
+   |
+   = note: the method is available for `impl std::io::Read` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Read` which provides `read_to_string` is implemented but not in scope; perhaps you want to import it
+   |
+2  + use std::io::Read;
+   |
+help: there is a method `read_to_end` with a similar name
+   |
+19 - reader.read_to_string(&mut buffer)?;
+19 + reader.read_to_end(&mut buffer)?;
+   |
+
+error: aborting due to 4 previous errors
+
+For more information about this error, try `rustc --explain E0599`.
+Couldn't compile the test.
+---- src/stream/compressor.rs - stream::compressor::Compressor<W>::bytes_written (line 128) stdout ----
+error[E0425]: cannot find value `output` in this scope
+ --> src/stream/compressor.rs:132:38
+  |
+7 | let mut compressor = Compressor::new(output, "data.txt", None);
+  |                                      ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/compressor.rs - stream::compressor::Compressor<W>::finish (line 174) stdout ----
+error[E0425]: cannot find value `output` in this scope
+ --> src/stream/compressor.rs:178:38
+  |
+7 | let mut compressor = Compressor::new(output, "data.txt", None);
+  |                                      ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/compressor.rs - stream::compressor::Compressor<W>::is_finished (line 148) stdout ----
+error[E0425]: cannot find value `output` in this scope
+ --> src/stream/compressor.rs:152:34
+  |
+7 | let compressor = Compressor::new(output, "data.txt", None);
+  |                                  ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/decompressor.rs - stream::decompressor::Decompressor (line 13) stdout ----
+error[E0599]: no method named `read_to_string` found for struct `Decompressor` in the current scope
+  --> src/stream/decompressor.rs:22:14
+   |
+12 | decompressor.read_to_string(&mut buffer)?;
+   |              ^^^^^^^^^^^^^^
+  --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/mod.rs:991:8
+   |
+   = note: the method is available for `Decompressor<File>` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Read` which provides `read_to_string` is implemented but not in scope; perhaps you want to import it
+   |
+2  + use std::io::Read;
+   |
+help: there is a method `read_to_end` with a similar name
+   |
+12 - decompressor.read_to_string(&mut buffer)?;
+12 + decompressor.read_to_end(&mut buffer)?;
+   |
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0599`.
+Couldn't compile the test.
+---- src/stream/compressor.rs - stream::compressor::Compressor<W>::with_chunk_size (line 80) stdout ----
+error[E0425]: cannot find value `output` in this scope
+ --> src/stream/compressor.rs:84:34
+  |
+7 | let compressor = Compressor::new(output, "data.txt", None)
+  |                                  ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/compressor.rs - stream::compressor::Compressor<W>::with_progress_callback (line 103) stdout ----
+error[E0425]: cannot find value `output` in this scope
+ --> src/stream/compressor.rs:107:34
+  |
+7 | let compressor = Compressor::new(output, "data.txt", None)
+  |                                  ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::bytes_read (line 124) stdout ----
+error[E0425]: cannot find value `source` in this scope
+ --> src/stream/decompressor.rs:128:42
+  |
+7 | let mut decompressor = Decompressor::new(source, None);
+  |                                          ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::total_size (line 148) stdout ----
+error[E0425]: cannot find value `source` in this scope
+ --> src/stream/decompressor.rs:152:38
+  |
+7 | let decompressor = Decompressor::new(source, None);
+  |                                      ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::is_finished (line 170) stdout ----
+error[E0425]: cannot find value `source` in this scope
+ --> src/stream/decompressor.rs:174:38
+  |
+7 | let decompressor = Decompressor::new(source, None);
+  |                                      ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::with_chunk_size (line 76) stdout ----
+error[E0425]: cannot find value `source` in this scope
+ --> src/stream/decompressor.rs:80:38
+  |
+7 | let decompressor = Decompressor::new(source, None)
+  |                                      ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/lib.rs - (line 101) stdout ----
+Test executable failed (exit status: 101).
+
+stdout:
+Archive creation not yet fully implemented
+Would create archive with 2 files at 'backup.small'
+
+stderr:
+
+thread 'main' panicked at src/lib.rs:19:36:
+called `Result::unwrap()` on an `Err` value: Io { error: Os { code: 2, kind: NotFound, message: "No such file or directory" }, context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/stream/mod.rs - stream::stream_reader (line 27) stdout ----
+error[E0599]: no method named `read_to_string` found for opaque type `impl std::io::Read` in the current scope
+  --> src/stream/mod.rs:36:8
+   |
+12 | reader.read_to_string(&mut buffer)?;
+   |        ^^^^^^^^^^^^^^
+  --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/mod.rs:991:8
+   |
+   = note: the method is available for `impl std::io::Read` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Read` which provides `read_to_string` is implemented but not in scope; perhaps you want to import it
+   |
+2  + use std::io::Read;
+   |
+help: there is a method `read_to_end` with a similar name
+   |
+12 - reader.read_to_string(&mut buffer)?;
+12 + reader.read_to_end(&mut buffer)?;
+   |
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0599`.
+Couldn't compile the test.
+---- src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::with_progress_callback (line 99) stdout ----
+error[E0425]: cannot find value `source` in this scope
+ --> src/stream/decompressor.rs:103:38
+  |
+7 | let decompressor = Decompressor::new(source, None)
+  |                                      ^^^^^^ not found in this scope
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0425`.
+Couldn't compile the test.
+---- src/stream/mod.rs - stream::stream_writer (line 56) stdout ----
+error[E0599]: no method named `write_all` found for opaque type `impl std::io::Write` in the current scope
+  --> src/stream/mod.rs:64:8
+   |
+11 | writer.write_all(b"Hello, world!")?;
+   |        ^^^^^^^^^
+  --> /rustc/29483883eed69d5fb4db01964cdf2af4d86e9cb2/library/std/src/io/mod.rs:1835:8
+   |
+   = note: the method is available for `impl std::io::Write` here
+   |
+   = help: items from traits can only be used if the trait is in scope
+help: trait `Write` which provides `write_all` is implemented but not in scope; perhaps you want to import it
+   |
+2  + use std::io::Write;
+   |
+help: there is a method `write` with a similar name
+   |
+11 - writer.write_all(b"Hello, world!")?;
+11 + writer.write(b"Hello, world!")?;
+   |
+
+error[E0599]: no method named `finish` found for opaque type `impl std::io::Write` in the current scope
+  --> src/stream/mod.rs:65:8
+   |
+12 | writer.finish()?;
+   |        ^^^^^^ method not found in `impl std::io::Write`
+
+error: aborting due to 2 previous errors
+
+For more information about this error, try `rustc --explain E0599`.
+Couldn't compile the test.
+---- src/lib.rs - (line 10) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/lib.rs:15:35:
+called `Result::unwrap()` on an `Err` value: Compression { error: InputRead("Failed to open input file: No such file or directory (os error 2)"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/lib.rs - (line 40) stdout ----
+Test executable failed (exit status: 101).
+
+stdout:
+Archive creation not yet fully implemented
+Would create archive with 2 files at 'backup.small'
+
+stderr:
+
+thread 'main' panicked at src/lib.rs:19:35:
+called `Result::unwrap()` on an `Err` value: Io { error: Os { code: 2, kind: NotFound, message: "No such file or directory" }, context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/lib.rs - (line 68) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/lib.rs:15:35:
+called `Result::unwrap()` on an `Err` value: Compression { error: InputRead("Failed to open input file: No such file or directory (os error 2)"), context: None, suggestion: None }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+---- src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::new (line 45) stdout ----
+Test executable failed (exit status: 101).
+
+stderr:
+
+thread 'main' panicked at src/stream/decompressor.rs:11:51:
+called `Result::unwrap()` on an `Err` value: Os { code: 2, kind: NotFound, message: "No such file or directory" }
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+
+failures:
+    src/archive/builder.rs - archive::builder::ArchiveBuilder::add_file_from_fs (line 126)
+    src/archive/extractor.rs - archive::extractor::ArchiveExtractor (line 14)
+    src/archive/extractor.rs - archive::extractor::ArchiveExtractor::extract_all (line 151)
+    src/archive/extractor.rs - archive::extractor::ArchiveExtractor::extract_file (line 188)
+    src/archive/extractor.rs - archive::extractor::ArchiveExtractor::list_contents (line 222)
+    src/archive/mod.rs - archive::calculate_archive_stats (line 216)
+    src/archive/mod.rs - archive::is_archive (line 96)
+    src/archive/mod.rs - archive::is_encrypted (line 123)
+    src/archive/mod.rs - archive::validate_archive_path (line 154)
+    src/archive/simple.rs - archive::simple::extract_archive (line 297)
+    src/archive/simple.rs - archive::simple::extract_file (line 152)
+    src/archive/simple.rs - archive::simple::list_archive_contents (line 22)
+    src/compress/builder.rs - compress::builder::CompressionBuilder (line 15)
+    src/compress/builder.rs - compress::builder::CompressionBuilder::compress (line 193)
+    src/compress/builder.rs - compress::builder::CompressionBuilder::with_chunk_size (line 122)
+    src/compress/builder.rs - compress::builder::CompressionBuilder::with_output_path (line 145)
+    src/compress/builder.rs - compress::builder::CompressionBuilder::with_progress_callback (line 166)
+    src/compress/simple.rs - compress::simple::compress_file (line 28)
+    src/decompress/builder.rs - decompress::builder::DecompressionBuilder (line 14)
+    src/decompress/builder.rs - decompress::builder::DecompressionBuilder::decompress (line 180)
+    src/decompress/simple.rs - decompress::simple::decompress_file (line 30)
+    src/decompress/simple.rs - decompress::simple::decompress_stream (line 139)
+    src/error/context.rs - error::context::EnhancedError<T>::new (line 333)
+    src/error/context.rs - error::context::EnhancedError<T>::new_with_context (line 357)
+    src/error/context.rs - error::context::EnhancedError<T>::new_with_suggestion (line 383)
+    src/error/context.rs - error::context::ErrorExt::with_context (line 276)
+    src/error/context.rs - error::context::ErrorExt::with_suggestion (line 297)
+    src/huffman/encoder.rs - huffman::encoder::encode (line 56)
+    src/lib.rs - (line 10)
+    src/lib.rs - (line 101)
+    src/lib.rs - (line 120)
+    src/lib.rs - (line 24)
+    src/lib.rs - (line 40)
+    src/lib.rs - (line 68)
+    src/lib.rs - (line 83)
+    src/stream/compressor.rs - stream::compressor::Compressor (line 14)
+    src/stream/compressor.rs - stream::compressor::Compressor<W>::bytes_written (line 128)
+    src/stream/compressor.rs - stream::compressor::Compressor<W>::finish (line 174)
+    src/stream/compressor.rs - stream::compressor::Compressor<W>::is_finished (line 148)
+    src/stream/compressor.rs - stream::compressor::Compressor<W>::with_chunk_size (line 80)
+    src/stream/compressor.rs - stream::compressor::Compressor<W>::with_progress_callback (line 103)
+    src/stream/decompressor.rs - stream::decompressor::Decompressor (line 13)
+    src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::bytes_read (line 124)
+    src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::is_finished (line 170)
+    src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::new (line 45)
+    src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::total_size (line 148)
+    src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::with_chunk_size (line 76)
+    src/stream/decompressor.rs - stream::decompressor::Decompressor<R>::with_progress_callback (line 99)
+    src/stream/mod.rs - stream::stream_reader (line 27)
+    src/stream/mod.rs - stream::stream_writer (line 56)
+
+test result: FAILED. 30 passed; 50 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.37s
+
+error: doctest failed, to rerun pass `--doc`

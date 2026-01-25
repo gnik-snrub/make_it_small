@@ -117,7 +117,7 @@ mod tests {
         let bytes = header.to_bytes();
 
         // Header should have consistent serialized size
-        assert!(bytes.len() > 0);
+        assert!(!bytes.is_empty());
 
         // Try to read it back
         let reconstructed = Headers::from_reader(&mut Cursor::new(&bytes))

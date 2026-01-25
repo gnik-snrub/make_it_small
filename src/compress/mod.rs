@@ -77,6 +77,7 @@ pub fn validate_chunk_size(chunk_size: usize) -> Result<()> {
     const MIN_CHUNK_SIZE: usize = 64 * 1024; // 64KB
     const MAX_CHUNK_SIZE: usize = 1024 * 1024 * 1024; // 1GB
 
+    #[allow(clippy::manual_range_contains)] // Simple range check is fine
     if chunk_size < MIN_CHUNK_SIZE || chunk_size > MAX_CHUNK_SIZE {
         Err(crate::error::MismallError::Compression {
             error: CompressionError::InvalidChunkSize(chunk_size),

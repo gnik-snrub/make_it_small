@@ -8,22 +8,27 @@ pub fn is_encrypted(flags: u8) -> bool {
     flags & ENCRYPTED != 0
 }
 
+#[allow(dead_code)]
 pub fn flip_has_checksum(flags: &mut u8) {
     *flags |= HAS_CHECKSUM;
 }
 
+#[allow(dead_code)]
 pub fn has_checksum(flags: u8) -> bool {
     flags & HAS_CHECKSUM != 0
 }
 
+#[allow(dead_code)]
 pub fn flip_stored_raw(flags: &mut u8) {
     *flags |= STORED_RAW;
 }
 
+#[allow(dead_code)]
 pub fn is_stored_raw(flags: u8) -> bool {
     flags & STORED_RAW != 0
 }
 
+#[allow(dead_code)]
 pub fn flip_is_archive(flags: &mut u8) {
     *flags |= IS_ARCHIVE;
 }

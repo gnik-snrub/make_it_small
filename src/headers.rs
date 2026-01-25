@@ -83,6 +83,7 @@ impl Headers {
         }
     }
 
+    #[allow(clippy::wrong_self_convention)] // to_bytes method name is fine
     pub fn to_bytes(self) -> Vec<u8> {
         let mut bytes = vec![];
 

@@ -192,6 +192,8 @@ impl std::error::Error for ArchiveError {}
 
 /// Main error type for all mismall operations
 #[derive(Debug)]
+#[allow(clippy::result_large_err)] // All variants are large due to context/suggestions, this is expected
+#[allow(clippy::result_large_err)]
 pub enum MismallError {
     /// Errors that occur during compression operations
     Compression {
