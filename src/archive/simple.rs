@@ -1,6 +1,6 @@
 use super::{ArchiveInfo, FileInfo};
 use crate::crypto::DEFAULT_CHUNK_SIZE;
-use crate::error::Result;
+use crate::error::{ArchiveError, DecompressionError, MismallError, Result};
 use crate::flags;
 use crate::headers::Headers;
 use std::fs::File;
@@ -33,7 +33,7 @@ use std::path::Path;
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
 pub fn list_archive_contents(archive_path: &Path) -> Result<(ArchiveInfo, Vec<FileInfo>)> {
-    let file = File::open(archive_path).map_err(|e| crate::error::MismallError::Io {
+    let file = File::open(archive_path).map_err(|e| MismallError::Io {
         error: e,
         context: None,
         suggestion: None,
@@ -42,36 +42,30 @@ pub fn list_archive_contents(archive_path: &Path) -> Result<(ArchiveInfo, Vec<Fi
     let mut reader = std::io::BufReader::new(file);
 
     // Read master header
-    let master_header = Headers::from_reader(&mut reader).map_err(|e| {
-        crate::error::MismallError::Decompression {
-            error: crate::error::DecompressionError::InvalidFormat(format!(
+    let master_header =
+        Headers::from_reader(&mut reader).map_err(|e| MismallError::Decompression {
+            error: DecompressionError::InvalidFormat(format!(
                 "Failed to parse master header: {}",
                 e
             )),
             context: None,
             suggestion: None,
-        }
-    })?;
+        })?;
 
     // Check if this is actually an archive
     if !flags::is_archive(master_header.flags) {
-        return Err(crate::error::MismallError::Decompression {
-            error: crate::error::DecompressionError::InvalidFormat(
-                "Input file is not an archive".to_string(),
-            ),
+        return Err(MismallError::Decompression {
+            error: DecompressionError::InvalidFormat("Input file is not an archive".to_string()),
             context: None,
             suggestion: None,
         });
     }
 
-    let initial_body_position =
-        reader
-            .stream_position()
-            .map_err(|e| crate::error::MismallError::Io {
-                error: e,
-                context: None,
-                suggestion: None,
-            })?;
+    let initial_body_position = reader.stream_position().map_err(|e| MismallError::Io {
+        error: e,
+        context: None,
+        suggestion: None,
+    })?;
 
     let archive_body_end_position = initial_body_position + master_header.compressed_size;
     let mut files = Vec::new();
@@ -80,14 +74,11 @@ pub fn list_archive_contents(archive_path: &Path) -> Result<(ArchiveInfo, Vec<Fi
     let mut has_encrypted_files = false;
 
     // Read all embedded file headers
-    while reader
-        .stream_position()
-        .map_err(|e| crate::error::MismallError::Io {
-            error: e,
-            context: None,
-            suggestion: None,
-        })?
-        < archive_body_end_position
+    while reader.stream_position().map_err(|e| MismallError::Io {
+        error: e,
+        context: None,
+        suggestion: None,
+    })? < archive_body_end_position
     {
         let embedded_header_result = Headers::from_reader(&mut reader);
         let embedded_header = match embedded_header_result {
@@ -112,22 +103,19 @@ pub fn list_archive_contents(archive_path: &Path) -> Result<(ArchiveInfo, Vec<Fi
         files.push(file_info);
 
         // Skip the compressed data to get to next header
-        let current_position =
-            reader
-                .stream_position()
-                .map_err(|e| crate::error::MismallError::Io {
-                    error: e,
-                    context: None,
-                    suggestion: None,
-                })?;
+        let current_position = reader.stream_position().map_err(|e| MismallError::Io {
+            error: e,
+            context: None,
+            suggestion: None,
+        })?;
         let next_position = current_position + embedded_header.compressed_size;
-        reader.seek(SeekFrom::Start(next_position)).map_err(|e| {
-            crate::error::MismallError::Io {
+        reader
+            .seek(SeekFrom::Start(next_position))
+            .map_err(|e| MismallError::Io {
                 error: e,
                 context: None,
                 suggestion: None,
-            }
-        })?;
+            })?;
     }
 
     let archive_info = ArchiveInfo::new(
@@ -166,7 +154,7 @@ pub fn extract_file(
     output_path: &std::path::Path,
     password: Option<&str>,
 ) -> Result<()> {
-    let file = File::open(archive_path).map_err(|e| crate::error::MismallError::Io {
+    let file = File::open(archive_path).map_err(|e| MismallError::Io {
         error: e,
         context: None,
         suggestion: None,
@@ -175,57 +163,45 @@ pub fn extract_file(
     let mut reader = std::io::BufReader::new(file);
 
     // Read master header
-    let master_header = Headers::from_reader(&mut reader).map_err(|e| {
-        crate::error::MismallError::Decompression {
-            error: crate::error::DecompressionError::InvalidFormat(format!(
+    let master_header =
+        Headers::from_reader(&mut reader).map_err(|e| MismallError::Decompression {
+            error: DecompressionError::InvalidFormat(format!(
                 "Failed to parse master header: {}",
                 e
             )),
             context: None,
             suggestion: None,
-        }
-    })?;
+        })?;
 
     // Check if this is actually an archive
     if !flags::is_archive(master_header.flags) {
-        return Err(crate::error::MismallError::Decompression {
-            error: crate::error::DecompressionError::InvalidFormat(
-                "Input file is not an archive".to_string(),
-            ),
+        return Err(MismallError::Decompression {
+            error: DecompressionError::InvalidFormat("Input file is not an archive".to_string()),
             context: None,
             suggestion: None,
         });
     }
 
-    let initial_body_position =
-        reader
-            .stream_position()
-            .map_err(|e| crate::error::MismallError::Io {
-                error: e,
-                context: None,
-                suggestion: None,
-            })?;
+    let initial_body_position = reader.stream_position().map_err(|e| MismallError::Io {
+        error: e,
+        context: None,
+        suggestion: None,
+    })?;
 
     let archive_body_end_position = initial_body_position + master_header.compressed_size;
 
     // Search for the target file
-    while reader
-        .stream_position()
-        .map_err(|e| crate::error::MismallError::Io {
+    while reader.stream_position().map_err(|e| MismallError::Io {
+        error: e,
+        context: None,
+        suggestion: None,
+    })? < archive_body_end_position
+    {
+        let current_position = reader.stream_position().map_err(|e| MismallError::Io {
             error: e,
             context: None,
             suggestion: None,
-        })?
-        < archive_body_end_position
-    {
-        let current_position =
-            reader
-                .stream_position()
-                .map_err(|e| crate::error::MismallError::Io {
-                    error: e,
-                    context: None,
-                    suggestion: None,
-                })?;
+        })?;
 
         let embedded_header_result = Headers::from_reader(&mut reader);
         let embedded_header = match embedded_header_result {
@@ -236,12 +212,11 @@ pub fn extract_file(
         // Check if this is the file we're looking for
         if embedded_header.original_file_name == file_path {
             // Found the target file, decode it
-            let output_file =
-                std::fs::File::create(output_path).map_err(|e| crate::error::MismallError::Io {
-                    error: e,
-                    context: None,
-                    suggestion: None,
-                })?;
+            let output_file = std::fs::File::create(output_path).map_err(|e| MismallError::Io {
+                error: e,
+                context: None,
+                suggestion: None,
+            })?;
 
             let mut output_writer = std::io::BufWriter::new(output_file);
 
@@ -252,37 +227,35 @@ pub fn extract_file(
                 &mut output_writer,
                 DEFAULT_CHUNK_SIZE,
             )
-            .map_err(|e| crate::error::MismallError::Decompression {
-                error: crate::error::DecompressionError::DecompressionFailed(e.to_string()),
+            .map_err(|e| MismallError::Decompression {
+                error: DecompressionError::DecompressionFailed(e.to_string()),
                 context: None,
                 suggestion: None,
             })?;
 
-            output_writer
-                .flush()
-                .map_err(|e| crate::error::MismallError::Io {
-                    error: e,
-                    context: None,
-                    suggestion: None,
-                })?;
+            output_writer.flush().map_err(|e| MismallError::Io {
+                error: e,
+                context: None,
+                suggestion: None,
+            })?;
 
             return Ok(());
         }
 
         // Skip this file's data to get to the next header
         let next_position = current_position + embedded_header.compressed_size;
-        reader.seek(SeekFrom::Start(next_position)).map_err(|e| {
-            crate::error::MismallError::Io {
+        reader
+            .seek(SeekFrom::Start(next_position))
+            .map_err(|e| MismallError::Io {
                 error: e,
                 context: None,
                 suggestion: None,
-            }
-        })?;
+            })?;
     }
 
     // File not found
-    Err(crate::error::MismallError::Archive {
-        error: crate::error::ArchiveError::FileNotFound(file_path.to_string()),
+    Err(MismallError::Archive {
+        error: ArchiveError::FileNotFound(file_path.to_string()),
         context: None,
         suggestion: None,
     })
@@ -313,13 +286,13 @@ pub fn extract_archive(
     password: Option<&str>,
 ) -> Result<ArchiveInfo> {
     // Ensure output directory exists
-    std::fs::create_dir_all(output_dir).map_err(|e| crate::error::MismallError::Io {
+    std::fs::create_dir_all(output_dir).map_err(|e| MismallError::Io {
         error: e,
         context: None,
         suggestion: None,
     })?;
 
-    let file = File::open(archive_path).map_err(|e| crate::error::MismallError::Io {
+    let file = File::open(archive_path).map_err(|e| MismallError::Io {
         error: e,
         context: None,
         suggestion: None,
@@ -328,36 +301,30 @@ pub fn extract_archive(
     let mut reader = std::io::BufReader::new(file);
 
     // Read master header
-    let master_header = Headers::from_reader(&mut reader).map_err(|e| {
-        crate::error::MismallError::Decompression {
-            error: crate::error::DecompressionError::InvalidFormat(format!(
+    let master_header =
+        Headers::from_reader(&mut reader).map_err(|e| MismallError::Decompression {
+            error: DecompressionError::InvalidFormat(format!(
                 "Failed to parse master header: {}",
                 e
             )),
             context: None,
             suggestion: None,
-        }
-    })?;
+        })?;
 
     // Check if this is actually an archive
     if !flags::is_archive(master_header.flags) {
-        return Err(crate::error::MismallError::Decompression {
-            error: crate::error::DecompressionError::InvalidFormat(
-                "Input file is not an archive".to_string(),
-            ),
+        return Err(MismallError::Decompression {
+            error: DecompressionError::InvalidFormat("Input file is not an archive".to_string()),
             context: None,
             suggestion: None,
         });
     }
 
-    let initial_body_position =
-        reader
-            .stream_position()
-            .map_err(|e| crate::error::MismallError::Io {
-                error: e,
-                context: None,
-                suggestion: None,
-            })?;
+    let initial_body_position = reader.stream_position().map_err(|e| MismallError::Io {
+        error: e,
+        context: None,
+        suggestion: None,
+    })?;
 
     let archive_body_end_position = initial_body_position + master_header.compressed_size;
     let mut files = Vec::new();
@@ -366,23 +333,17 @@ pub fn extract_archive(
     let mut has_encrypted_files = false;
 
     // Extract all embedded files
-    while reader
-        .stream_position()
-        .map_err(|e| crate::error::MismallError::Io {
+    while reader.stream_position().map_err(|e| MismallError::Io {
+        error: e,
+        context: None,
+        suggestion: None,
+    })? < archive_body_end_position
+    {
+        let _current_position = reader.stream_position().map_err(|e| MismallError::Io {
             error: e,
             context: None,
             suggestion: None,
-        })?
-        < archive_body_end_position
-    {
-        let _current_position =
-            reader
-                .stream_position()
-                .map_err(|e| crate::error::MismallError::Io {
-                    error: e,
-                    context: None,
-                    suggestion: None,
-                })?;
+        })?;
 
         let embedded_header_result = Headers::from_reader(&mut reader);
         let embedded_header = match embedded_header_result {
@@ -395,7 +356,7 @@ pub fn extract_archive(
 
         // Ensure parent directories exist
         if let Some(parent) = file_output_path.parent() {
-            std::fs::create_dir_all(parent).map_err(|e| crate::error::MismallError::Io {
+            std::fs::create_dir_all(parent).map_err(|e| MismallError::Io {
                 error: e,
                 context: None,
                 suggestion: None,
@@ -403,13 +364,12 @@ pub fn extract_archive(
         }
 
         // Extract the file
-        let output_file = std::fs::File::create(&file_output_path).map_err(|e| {
-            crate::error::MismallError::Io {
+        let output_file =
+            std::fs::File::create(&file_output_path).map_err(|e| MismallError::Io {
                 error: e,
                 context: None,
                 suggestion: None,
-            }
-        })?;
+            })?;
 
         let mut output_writer = std::io::BufWriter::new(output_file);
 
@@ -420,19 +380,17 @@ pub fn extract_archive(
             &mut output_writer,
             DEFAULT_CHUNK_SIZE,
         )
-        .map_err(|e| crate::error::MismallError::Decompression {
-            error: crate::error::DecompressionError::DecompressionFailed(e.to_string()),
+        .map_err(|e| MismallError::Decompression {
+            error: DecompressionError::DecompressionFailed(e.to_string()),
             context: None,
             suggestion: None,
         })?;
 
-        output_writer
-            .flush()
-            .map_err(|e| crate::error::MismallError::Io {
-                error: e,
-                context: None,
-                suggestion: None,
-            })?;
+        output_writer.flush().map_err(|e| MismallError::Io {
+            error: e,
+            context: None,
+            suggestion: None,
+        })?;
 
         // Track file info - use original header before moving it
         let file_info = FileInfo::new(

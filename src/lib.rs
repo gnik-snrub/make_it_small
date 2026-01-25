@@ -247,7 +247,7 @@ pub use error::{CompressionError, DecompressionError, MismallError};
 
 // Re-export simple API functions
 #[cfg(feature = "compression")]
-pub use compress::{compress_file, compress_stream};
+pub use compress::{compress_file, compress_stream, validate_chunk_size};
 #[cfg(feature = "compression")]
 pub use decompress::{decompress_file, decompress_stream};
 
@@ -270,9 +270,9 @@ pub use stream::{stream_reader, stream_writer, Compressor, Decompressor};
 // #[cfg(all(feature = "compression", feature = "async"))]
 // pub mod async_stream;
 
-// Legacy modules for internal use (not part of public API)
+// Legacy modules for CLI use
 #[cfg(feature = "cli")]
-mod archive_legacy;
+pub mod archive_legacy;
 mod checksum;
 #[cfg(feature = "cli")]
 mod cli;

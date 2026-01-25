@@ -3,6 +3,9 @@
 //! This module provides functionality for creating and extracting archives
 //! that contain multiple compressed files.
 
+use crate::error::context::Suggestion;
+use crate::error::{MismallError, Result};
+
 pub mod builder;
 pub mod extractor;
 mod simple;
@@ -163,14 +166,12 @@ pub fn is_encrypted(headers: &crate::headers::Headers) -> bool {
 /// // println!("Archive file is valid");
 /// # Ok::<(), Box<dyn std::error::Error>>(())
 /// ```
-pub fn validate_archive_path<P: AsRef<std::path::Path>>(
-    archive_path: P,
-) -> crate::error::Result<()> {
+pub fn validate_archive_path<P: AsRef<std::path::Path>>(archive_path: P) -> Result<()> {
     let path = archive_path.as_ref();
 
     // Check if file exists
     if !path.exists() {
-        return Err(crate::error::MismallError::InvalidInput {
+        return Err(MismallError::InvalidInput {
             message: format!("Archive file does not exist: {}", path.display()),
             context: None,
             suggestion: None,
@@ -179,7 +180,7 @@ pub fn validate_archive_path<P: AsRef<std::path::Path>>(
 
     // Check if it's a file (not directory)
     if !path.is_file() {
-        return Err(crate::error::MismallError::InvalidInput {
+        return Err(MismallError::InvalidInput {
             message: format!("Path is not a file: {}", path.display()),
             context: None,
             suggestion: None,
@@ -188,19 +189,20 @@ pub fn validate_archive_path<P: AsRef<std::path::Path>>(
 
     // Check file extension
     if let Some(extension) = path.extension()
-        && extension != "small" {
-            return Err(crate::error::MismallError::InvalidInput {
-                message: format!(
-                    "Invalid archive extension: {:?}. Expected '.small'",
-                    extension
-                ),
-                context: None,
-                suggestion: Some(crate::error::context::Suggestion::new(
-                    "Use .small extension",
-                    "Archive files must have a .small extension",
-                )),
-            });
-        }
+        && extension != "small"
+    {
+        return Err(MismallError::InvalidInput {
+            message: format!(
+                "Invalid archive extension: {:?}. Expected '.small'",
+                extension
+            ),
+            context: None,
+            suggestion: Some(Suggestion::new(
+                "Use .small extension",
+                "Archive files must have a .small extension",
+            )),
+        });
+    }
 
     Ok(())
 }
