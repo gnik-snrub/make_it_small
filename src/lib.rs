@@ -142,6 +142,8 @@
 //! ### Simple API
 //! - [`compress_file()`] - Compress a file with default settings
 //! - [`decompress_file()`] - Decompress a file with default settings
+//! - [`compress_stream()`] - Compress data streams with custom settings
+//! - [`decompress_stream()`] - Decompress data streams with custom settings
 //! - [`validate_chunk_size()`] - Validate memory usage parameters
 //!
 //! ### Builder API  
@@ -155,6 +157,11 @@
 //! - [`stream_writer()`] - Write to compressed streams  
 //! - [`Compressor`] - Stateful streaming compression
 //! - [`Decompressor`] - Stateful streaming decompression
+//!
+//! ### Progress Tracking
+//! - [`ProgressInfo`] - Progress information for long operations
+//! - [`ProgressCallback`] - Callback type for progress updates
+//! - [`ProcessingStage`] - Different stages of compression/decompression
 //!
 //! ## 📚 Module Organization
 //!
