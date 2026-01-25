@@ -108,6 +108,18 @@ cargo run --example streaming
 cargo run --example performance
 ```
 
+## 📈 Performance Tips
+
+For comprehensive performance optimization guidance, see [**PERFORMANCE.md**](PERFORMANCE.md):
+
+- Memory usage optimization for different system configurations
+- Chunk size selection strategies
+- Data type-specific recommendations
+- Encryption performance considerations
+- Streaming best practices
+- Benchmarking templates
+- Common pitfalls to avoid
+
 ## 🔧 Error Handling
 
 All library functions return `Result<T, MismallError>` where `MismallError` provides detailed error information with context for troubleshooting.
