@@ -243,13 +243,13 @@ pub mod progress;
 
 // Re-export key types for convenience
 #[cfg(feature = "compression")]
-pub use error::{CompressionError, DecompressionError, MismallError};
+pub use error::{CompressionError, DecompressionError, MismallError, Result};
 
 // Re-export simple API functions
 #[cfg(feature = "compression")]
-pub use compress::{compress_file, compress_stream, validate_chunk_size};
+pub use compress::{compress_file, compress_stream, validate_chunk_size, CompressionBuilder};
 #[cfg(feature = "compression")]
-pub use decompress::{decompress_file, decompress_stream};
+pub use decompress::{decompress_file, decompress_stream, DecompressionBuilder};
 
 // Re-export archive API functions
 #[cfg(feature = "archives")]
@@ -262,6 +262,8 @@ pub use constants::{MAGIC_BYTES, VERSION};
 pub use crypto::DEFAULT_CHUNK_SIZE;
 
 // Re-export streaming utilities
+#[cfg(feature = "compression")]
+pub use progress::{ProcessingStage, ProgressCallback, ProgressInfo};
 #[cfg(feature = "compression")]
 pub use stream::{stream_reader, stream_writer, Compressor, Decompressor};
 
