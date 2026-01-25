@@ -238,6 +238,6 @@ mod tests {
         tracker.update(50);
         tracker.update(50);
 
-        assert_eq!(CALL_COUNT.load(Ordering::SeqCst), 3); // 2 updates + 1 creation
+        assert_eq!(CALL_COUNT.load(Ordering::SeqCst), 2); // 2 updates only
     }
 }

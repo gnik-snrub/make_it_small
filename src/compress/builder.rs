@@ -246,7 +246,7 @@ impl From<PathBuf> for CompressionBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::fs;
+
     use std::io::Write;
     use tempfile::NamedTempFile;
 
@@ -295,11 +295,12 @@ mod tests {
 
         static CALL_COUNT: AtomicU32 = AtomicU32::new(0);
 
-        let _builder = CompressionBuilder::new("test.txt").with_progress_callback(|progress| {
+        let callback: crate::progress::ProgressCallback = Box::new(|progress| {
             CALL_COUNT.fetch_add(1, Ordering::SeqCst);
             // Check that we can access progress info
             assert!(progress.percentage >= 0.0);
         });
+        let _builder = CompressionBuilder::new("test.txt").with_progress_callback(callback);
 
         // In real usage, the callback would be called during compress()
         // This test just verifies the builder accepts the callback

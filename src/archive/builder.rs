@@ -343,7 +343,7 @@ mod tests {
 
     #[test]
     fn test_build_archive() {
-        let result = ArchiveBuilder::new()
+        let _result = ArchiveBuilder::new()
             .add_file("test.txt", b"Hello")
             .unwrap()
             .build("test.small");

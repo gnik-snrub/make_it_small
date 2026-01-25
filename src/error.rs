@@ -144,6 +144,7 @@ impl fmt::Display for DecompressionError {
 impl std::error::Error for DecompressionError {}
 
 /// Specific archive error types
+#[cfg(feature = "archives")]
 #[derive(Debug)]
 pub enum ArchiveError {
     /// Failed to create archive
@@ -160,6 +161,7 @@ pub enum ArchiveError {
     FileNotFound(String),
 }
 
+#[cfg(feature = "archives")]
 impl fmt::Display for ArchiveError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -185,6 +187,7 @@ impl fmt::Display for ArchiveError {
     }
 }
 
+#[cfg(feature = "archives")]
 impl std::error::Error for ArchiveError {}
 
 /// Main error type for all mismall operations
@@ -290,6 +293,7 @@ impl ErrorExt for crate::error::Result<()> {
                 context: Some(context),
                 suggestion: None,
             },
+            #[cfg(feature = "archives")]
             MismallError::Archive { error, .. } => MismallError::Archive {
                 error,
                 context: Some(context),
@@ -325,6 +329,7 @@ impl ErrorExt for crate::error::Result<()> {
                 context: None,
                 suggestion: Some(suggestion),
             },
+            #[cfg(feature = "archives")]
             MismallError::Archive { error, .. } => MismallError::Archive {
                 error,
                 context: None,

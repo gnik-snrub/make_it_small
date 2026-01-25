@@ -75,7 +75,7 @@ pub fn stream_writer<W: Write + std::io::Seek>(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::{Cursor, Read};
+    use std::io::Cursor;
 
     #[test]
     fn test_stream_reader_creation() {

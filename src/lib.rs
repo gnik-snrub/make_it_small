@@ -227,7 +227,7 @@
 //!
 //! MIT - do whatever you want, just don't claim you wrote it.
 
-#[cfg(feature = "archives")]
+#[cfg(feature = "compression")]
 pub mod compress;
 pub mod decompress;
 #[cfg(feature = "compression")]
@@ -273,8 +273,10 @@ mod flags;
 mod headers;
 mod huffman;
 mod io;
-pub mod tests;
 mod ux;
+#[cfg(feature = "cli")]
+mod archive_legacy;
+pub mod tests;
 
 // Archive operations module
 #[cfg(feature = "archives")]

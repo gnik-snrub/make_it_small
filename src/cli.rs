@@ -6,7 +6,7 @@ use clap::{Parser, Subcommand};
 
 use crate::huffman::{decoder::decode, encoder::encode};
 
-use crate::archive::{self, add_to_archive, create_archive, extract_archive};
+use crate::archive_legacy::{add_to_archive, create_archive, extract_archive, list_contents};
 use crate::flags;
 use crate::headers::Headers;
 
@@ -338,14 +338,17 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 }
             };
 
+            // Keep header in scope for later use
+            let hdr = header;
+
             let decrypt_password_str: Option<String> = if let Some(p) = password {
                 Some(p)
             } else if flags::is_encrypted(header.flags) {
                 print!("File is encrypted. Please enter password: ");
                 io::stdout().flush().unwrap();
-                let mut password_input = String::new();
-                io::stdin().read_line(&mut password_input).unwrap();
-                Some(password_input.trim().to_string())
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).unwrap();
+                Some(input.trim().to_string())
             } else {
                 None
             };
@@ -411,7 +414,7 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 eprintln!("Error opening input file '{}': {}", name_in, e);
                 Box::new(e) as Box<dyn std::error::Error>
             })?);
-            match archive::list_contents(&mut input_file) {
+            match list_contents(&mut input_file) {
                 Ok(files) => {
                     if files.is_empty() {
                         println!("Archive '{}' is empty or not found.", name_in);
@@ -448,13 +451,9 @@ pub fn run_command() -> Result<(), Box<dyn std::error::Error>> {
                 None => PathBuf::from(&file_to_extract), // Default to file_to_extract if no output name given
             };
 
-            if let Err(e) = archive::extract_file(
-                &mut input_file,
-                &file_to_extract,
-                &output_path,
-                None,
-                actual_chunk_size,
-            ) {
+            if let Err(e) =
+                extract_archive(hdr, &mut input_file, &output_path, None, actual_chunk_size)
+            {
                 eprintln!(
                     "Error extracting file '{}' from archive '{}': {}",
                     file_to_extract, name_in, e
